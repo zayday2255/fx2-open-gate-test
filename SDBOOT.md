@@ -131,7 +131,16 @@ The fix is in the build, and there is now a guard: `pins_for_runner.py --check` 
 fails, naming each file, unless every payload file is there at the right size and SHA-256. Given the stale hook that shipped, it
 reports all six missing files and exits non-zero.
 
-Installing again with the rebuilt hook is the next step; the payload's hook is now 7,856 bytes with all 16 entries correct.
+**Reinstalled with the rebuilt hook (7,856 bytes, all 16 entries correct) and it works.** All 17 files copied, each read back and
+SHA-256 checked, `DONE: the start-up loader is INSTALLED with plan og57`.
+
+Then the loader applied 5.7K **by itself at a power-on**, with no computer attached: the camera came up in open gate. That is the goal
+this loader exists for, on hardware.
+
+The one thing that went wrong on the way was the **kill switch doing its job**: an earlier attempt looked like "5.7K was not
+enabled", but the card was out at that power-on, so the helper stopped before reading the plan. Correct behaviour, and worth knowing
+as a habit: **power on with the card in, wait ~20 seconds for the helper, then set MOVIE.** The patch is applied at power-on, not when
+the switch is flipped to MOVIE; inserting the card afterwards does nothing until the next power-on.
 
 ## Try it, in this order
 
