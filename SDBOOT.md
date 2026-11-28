@@ -30,7 +30,21 @@ This page replaces the notes of the `sdboot-research` branch (`sdboot_research/`
 | `libJit_fx2_X18 / X19 / X20` | The kit's encoder step (read / apply / put back) built for a process outside the camera application. |
 | `libJit_fx2_X21` | The kit's read-only check built for a process outside the camera application: the same sites, guards and verdict, read from the camera application's maps and memory (issue #16; `check` runs this). |
 
-Plans: `og2560` (3840x2560, 23.98p / 24p), `og2560pal` (25p), `squeeze`, and `check` (reads only).
+Plans: `og2560` (3840x2560, 23.98p / 24p), `og2560pal` (25p), `og57` (5.7K 5760x3840 at 300 Mbps, 23.98p / 24p),
+`og57pal` (5.7K on a PAL camera, 25p), `squeeze`, and `check` (reads only).
+
+| Plan | Steps | What it records |
+|---|---|---|
+| `og2560` | `L13 H5 L16 X19 S16` | 3840x2560, XAVC HS / S 4K, 23.98p |
+| `og2560pal` | `L13 P5 L16 X19 S16` | the same, XAVC S 4K 25p |
+| `og57` | `L13 K5 K16 X22 S16` | **5760x3840**, 300 Mbps on the 100M and higher settings, 23.98p |
+| `og57pal` | `L13 J5 K16 X22 S16` | the same on a PAL camera, 25p |
+| `squeeze` | `X20 L13 L5 S16` | 3840x2160 holding the whole 3:2 area, squeezed 27/32 |
+| `check` | `X21` | nothing: reads only |
+
+`X19` applies the 4K encoder design (`ogfile2560_hs_s_fx2_v2`); `X22` applies the 5.7K one (`ogfile57r300m1_fx2_v4`, 382 sites against
+151). They are separate files, so a plan can never run the wrong encoder table. If a plan cannot finish, `X20` (4K) or `X23` (5.7K) puts
+the encoder side back, matching the plan's own encoder step.
 
 **The camera must be switched on on STILL.** Wait about 20 seconds, then set MOVIE. Switched on on MOVIE, the first step refuses
 (the kit's own rule) and the camera stays stock.
@@ -87,7 +101,8 @@ Camera on STILL, fresh power-on, USB (Mass Storage) in. Each step stands on the 
 | # | Launcher | Writes | What to expect |
 |---|---|---|---|
 | 1 | `loader_try_readonly` | RAM only, and reads only | Then `loader_status`: `X21: read; VERDICT READY`. This shows the helper can reach the coprocessor and the application from outside. |
-| 2 | `loader_try_open_gate` | RAM only; camera memory as the kit's apply does | Then `loader_status`: five steps DONE. Unplug, set MOVIE, record: 3840x2560. A battery change undoes all of it. |
+| 2 | `loader_try_open_gate` | RAM only; camera memory as the kit's apply does | Then `loader_status`: five steps DONE. Unplug, set MOVIE, record: 3840x2560. A battery change undoes all of it. **Ran on a camera 2026-11-27: 3840x2560, 34 s, 816 frames, 4:2:2 10-bit, clean decode.** |
+| 2 (5.7K) | `loader_try_57k` | RAM only; the same, with the plan `og57` | `loader_status`: `L13 K5 K16 X22 S16` each DONE. Unplug, set MOVIE, record: **5760x3840** at 300 Mbps. Needs a V90 card or CFexpress Type A. A battery change undoes it. |
 | 3 | `loader_install_open_gate` | **FLASH** | Battery out 10 s. Switch on on STILL, wait 20 s, `loader_status`: the log shows `fx2boot[1]` and five steps DONE. |
 | 4 | (switch off and on, battery in) | | `loader_status`: `fx2boot[2]`, four steps DONE and `X19: NOTHING TO DO`. |
 | 5 | `loader_uninstall` | **FLASH** (removes) | `loader_status`: nothing installed. |

@@ -109,6 +109,8 @@ case "$PLAN" in
     og2560) STEPS="L13 H5 L16 X19 S16" ;;            # 3840x2560 open gate, 23.98p/24p (the kit's og2560)
     og2560pal) STEPS="L13 P5 L16 X19 S16" ;;         # the same on a PAL-set camera, 25p (the kit's og2560 --pal)
     squeeze) STEPS="X20 L13 L5 S16" ;;               # the squeezed open gate (the kit's squeeze): its encoder side is the stock one
+    og57) STEPS="L13 K5 K16 X22 S16" ;;              # 5.7K, 5760x3840 at 300 Mbps, 23.98p/24p (the kit's og57)
+    og57pal) STEPS="L13 J5 K16 X22 S16" ;;           # 5.7K on a PAL-set camera, 25p (the kit's og57 --pal)
     *) stop "the plan file does not hold a plan of this build" ;;
 esac
 say "plan $PLAN: $STEPS"
@@ -142,7 +144,12 @@ if [ "$PLAN" = check ]; then
     rm -f $BUSY
     exit 0
 fi
-BACK=X20
+# The step that puts the encoder side back, once the plan is known to have one. It must match the plan's own encoder step: X20 puts back
+# the 4K design (og2560, og2560pal) and X23 the 5.7K one (og57, og57pal); the squeeze plan's encoder side is the stock one, so it is X20.
+case $PLAN in
+    og57|og57pal) BACK=X23 ;;
+    *) BACK=X20 ;;
+esac
 for S in $STEPS; do step $S || give_up; done
 restore
 say "END: plan $PLAN, every step done"

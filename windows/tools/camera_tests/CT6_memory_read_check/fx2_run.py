@@ -124,38 +124,44 @@ WRITE_STEPS = {
     "A17": ("libJit_fx2_A17.so", "f190f3c211b501d1ea8291439d2092b254c5be7a4be8844450eaafe1e0ac4764", "LOCAL: put back S16's 1.3x shape (1.95:1)"),
 }
 # --- loader steps: begin (helper_fx2/sdboot/update_runner.py writes this block)
-# The start-up loader, build fx2boot_v1 ("sdboot": helper_fx2/sdboot/, modding/FX2_SDBOOT.md). W1..W14 bring its files to the camera's RAM disk
+# The start-up loader, build fx2boot_v1 ("sdboot": helper_fx2/sdboot/, modding/FX2_SDBOOT.md). W1..W18 bring its files to the camera's RAM disk
 # (/tmp_wbshd, nothing on flash), W50..W53 choose what its helper applies (RAM copy), W30 runs the helper once from RAM, W42 reads its status;
 # W40 INSTALLS it on flash (/etc/fx2boot and /etc/ld.so.preload) and W41 removes it. A step in LOADER_FLASH can write the camera's flash:
 # it needs --writes-flash besides --writes-memory. A battery change does not undo a flash step; W41 does.
 LOADER_STEPS = {
-    "W1": ("sdboot/libJit_fx2_W1.so", "4fb6da77776488a419dc946192c4a3dfd9b37697ddc5aa4edfab4c661ed93030", "RAM only: bring fx2boot.sh (7761 bytes) of the start-up loader to the camera's RAM disk"),
+    "W1": ("sdboot/libJit_fx2_W1.so", "cabae27e05b542023fcd6d7c0df51eb80d9c5c09e0208cadf98f74ec3db72438", "RAM only: bring fx2boot.sh (8315 bytes) of the start-up loader to the camera's RAM disk"),
     "W2": ("sdboot/libJit_fx2_W2.so", "fd2cd066fa8106cf85f2827fd68cc3002e1cf2bb7eaee42dd8b59e8b87d876d7", "RAM only: bring fx2cp.so (6136 bytes) of the start-up loader to the camera's RAM disk"),
     "W3": ("sdboot/libJit_fx2_W3.so", "bdf870f87df5606de3637e6cd2ed401576819403fd2d9b0a121094e755c0344a", "RAM only: bring fx2hook.so (7552 bytes) of the start-up loader to the camera's RAM disk"),
     "W4": ("sdboot/libJit_fx2_W4.so", "6465d1e5d4a7c9a9575939aea506410e6e84ad88bec7e25e5ea66382c8d9d64e", "RAM only: bring libJit_fx2_X21.so (65072 bytes, piece 1 of 2) of the start-up loader to the camera's RAM disk"),
     "W5": ("sdboot/libJit_fx2_W5.so", "01fb509ccefd7847f60e2e575d9b18abd1ab7a4935386a77562a7d8a1f9db8d9", "RAM only: bring libJit_fx2_X21.so (65072 bytes, piece 2 of 2) of the start-up loader to the camera's RAM disk"),
     "W6": ("sdboot/libJit_fx2_W6.so", "dc5360657499384a9885faf6678b801f26be9c5af66f940980eb1f58ea7bf963", "RAM only: bring libJit_fx2_X18.so (27280 bytes) of the start-up loader to the camera's RAM disk"),
-    "W7": ("sdboot/libJit_fx2_W7.so", "165cec4c12de773203e8cbb787c68b7c764e65bca244dc07ace2490cd88d70b0", "RAM only: bring libJit_fx2_L13.so (19832 bytes) of the start-up loader to the camera's RAM disk"),
-    "W8": ("sdboot/libJit_fx2_W8.so", "3f490ae8df4800490e010e6b609027efd0ba4ff1e2b5e7d36379ece6b95cd85d", "RAM only: bring libJit_fx2_H5.so (31680 bytes) of the start-up loader to the camera's RAM disk"),
-    "W9": ("sdboot/libJit_fx2_W9.so", "077156c2a7c1af1f51fb0f432ebb104e643278af9ef9851935050af3456184ec", "RAM only: bring libJit_fx2_P5.so (31696 bytes) of the start-up loader to the camera's RAM disk"),
-    "W10": ("sdboot/libJit_fx2_W10.so", "9f5d99c65b868864271ade42787950c2c382ffb2eecaf2a3a67dbadba268136d", "RAM only: bring libJit_fx2_L5.so (31680 bytes) of the start-up loader to the camera's RAM disk"),
-    "W11": ("sdboot/libJit_fx2_W11.so", "3ac05cd72ae7265bb9e8fab876902681995dc770daa6c550dbf808e9302c06ec", "RAM only: bring libJit_fx2_L16.so (16232 bytes) of the start-up loader to the camera's RAM disk"),
-    "W12": ("sdboot/libJit_fx2_W12.so", "4d7bb1b544f314681eb4d2f55514febbccebfd1a8744eb58890a76c4ad0978c2", "RAM only: bring libJit_fx2_X19.so (28392 bytes) of the start-up loader to the camera's RAM disk"),
-    "W13": ("sdboot/libJit_fx2_W13.so", "b7a74bc39d332925e158b3dda3b213aba41405f365b5e2f25d0dd6e1cba74f84", "RAM only: bring libJit_fx2_X20.so (28400 bytes) of the start-up loader to the camera's RAM disk"),
-    "W14": ("sdboot/libJit_fx2_W14.so", "ebfc898327cec057868120a1c9a3c4726de175c0af0df4c572abdbb0b0cef2d9", "RAM only: bring libJit_fx2_S16.so (17368 bytes) of the start-up loader to the camera's RAM disk"),
-    "W30": ("sdboot/libJit_fx2_W30.so", "d34910ab7c981391fa11c54c473a52332f45520b2ffc123cdc9945107bc2f2a7", "RAM only: start the start-up loader's helper once, now, from the RAM copy (the chosen plan); no flash is written"),
-    "W40": ("sdboot/libJit_fx2_W40.so", "867166619a82ffeef6a3e95bbad475d8d691279a12be0e9385ae33236d741436", "FLASH: install the start-up loader (copies its checked files to /etc/fx2boot and writes /etc/ld.so.preload)"),
+    "W7": ("sdboot/libJit_fx2_W7.so", "2ae19c6cd31ca61f6fcedf7a9a00f6ab230968be5eff9ca63e1e8c9c5e2e152e", "RAM only: bring libJit_fx2_X19.so (28392 bytes) of the start-up loader to the camera's RAM disk"),
+    "W8": ("sdboot/libJit_fx2_W8.so", "34e75c36d596c304b880c52b96c7c447fb1412477fc85965581013cbc8dc0c59", "RAM only: bring libJit_fx2_X20.so (28400 bytes) of the start-up loader to the camera's RAM disk"),
+    "W9": ("sdboot/libJit_fx2_W9.so", "caf235f8089590e21dd0a975f5a83737773b2bdae3bb87837254d30abc715131", "RAM only: bring libJit_fx2_X22.so (37632 bytes) of the start-up loader to the camera's RAM disk"),
+    "W10": ("sdboot/libJit_fx2_W10.so", "ef2be095aac7652995fb8a27dc16f7920e578c9aba5f91f5facced051d4e1b4a", "RAM only: bring libJit_fx2_L13.so (19832 bytes) of the start-up loader to the camera's RAM disk"),
+    "W11": ("sdboot/libJit_fx2_W11.so", "1b67128add8e2794cfa9ba3a762a32ffe73d563bd2d5c6c1cb7eecf12302cb28", "RAM only: bring libJit_fx2_H5.so (31680 bytes) of the start-up loader to the camera's RAM disk"),
+    "W12": ("sdboot/libJit_fx2_W12.so", "76260ce812ac04c625a7939bbbf09af1e1096595eb95ea4e549d83d2701803fb", "RAM only: bring libJit_fx2_P5.so (31696 bytes) of the start-up loader to the camera's RAM disk"),
+    "W13": ("sdboot/libJit_fx2_W13.so", "87ecd56e2b8fed94187889a8bd0534ea764a278a96f694405e86ab80beb80cb5", "RAM only: bring libJit_fx2_L5.so (31680 bytes) of the start-up loader to the camera's RAM disk"),
+    "W14": ("sdboot/libJit_fx2_W14.so", "4473136ca1447937b00e098ca85f1092acb09d6b88b146545b5562703a3107fa", "RAM only: bring libJit_fx2_L16.so (16232 bytes) of the start-up loader to the camera's RAM disk"),
+    "W15": ("sdboot/libJit_fx2_W15.so", "4532228cad515c8a6af7f02c26dd2febb0ab7e5a6767e7aea8284626b350f63c", "RAM only: bring libJit_fx2_S16.so (17368 bytes) of the start-up loader to the camera's RAM disk"),
+    "W16": ("sdboot/libJit_fx2_W16.so", "a791d854dc558fa4cda2509d7a2890ed1c25373f62f3e4ec7f30479f61c91433", "RAM only: bring libJit_fx2_K5.so (31680 bytes) of the start-up loader to the camera's RAM disk"),
+    "W17": ("sdboot/libJit_fx2_W17.so", "c335e1834c83619d4930f5dd772146e782b6dc3c4667ccefe71585aafb11e945", "RAM only: bring libJit_fx2_J5.so (31680 bytes) of the start-up loader to the camera's RAM disk"),
+    "W18": ("sdboot/libJit_fx2_W18.so", "5c918c48b513e38885d45a9f5849ef25f6a51f1af3d23b5ba6178ce69a3b9073", "RAM only: bring libJit_fx2_K16.so (16824 bytes) of the start-up loader to the camera's RAM disk"),
+    "W30": ("sdboot/libJit_fx2_W30.so", "58404229507cfa24d18768538f64a393a493274a194596027763d42d3e3348e8", "RAM only: start the start-up loader's helper once, now, from the RAM copy (the chosen plan); no flash is written"),
+    "W40": ("sdboot/libJit_fx2_W40.so", "3d993ecd57015647541d3e83c7c39ca1138844feebd186ee2cbce0250924adf5", "FLASH: install the start-up loader (copies its checked files to /etc/fx2boot and writes /etc/ld.so.preload)"),
     "W41": ("sdboot/libJit_fx2_W41.so", "467c00c9b174c70df6f18e3e5fa601fbfd5e72a624a6574b19a178c85eb234db", "FLASH: uninstall the start-up loader (removes /etc/ld.so.preload first, then /etc/fx2boot and earlier research builds' files)"),
-    "W42": ("sdboot/libJit_fx2_W42.so", "c19da95033608f114f18b0480417144c28a13cd5dbd71a1e6f271e9a37275c5f", "read-only: status of the start-up loader (what is installed, the plan, the helper's last report)"),
-    "W50": ("sdboot/libJit_fx2_W50.so", "355b6dfc13e96e5bb18c30287cd33d0b3b1c0d7cfdb15b1e0afed0b27c016e84", "RAM only: choose the helper's plan: check (read-only: reads the coprocessor and encoder sites from outside the camera application)"),
-    "W51": ("sdboot/libJit_fx2_W51.so", "064bc0b5527deb2a83fd5a90d71b634bbc8f3f83aa98ebc1ae9920e563dbf0c8", "RAM only: choose the helper's plan: og2560 (the 3840x2560 open gate, 23.98p/24p: L13 H5 L16 X19 S16)"),
-    "W52": ("sdboot/libJit_fx2_W52.so", "444b5f00598a8f042161677d6d36cfed62b4c8b36d510418c15519e42077ee1d", "RAM only: choose the helper's plan: og2560pal (the 3840x2560 open gate on a PAL-set camera, 25p: L13 P5 L16 X19 S16)"),
-    "W53": ("sdboot/libJit_fx2_W53.so", "1a682332cc79d6e8cba978b95476e5fce525c4bc2391ec5c796abe8c2d4dc207", "RAM only: choose the helper's plan: squeeze (the squeezed open gate: X20 L13 L5 S16)"),
+    "W42": ("sdboot/libJit_fx2_W42.so", "a10aa2d3c5dea40c1863be1c78b175a4b7154ffed137a36e470c853d5f94033b", "read-only: status of the start-up loader (what is installed, the plan, the helper's last report)"),
+    "W50": ("sdboot/libJit_fx2_W50.so", "7df07b84d27a1316b8511beef2bc845717f0367bf5724fab282457c3d255e052", "RAM only: choose the helper's plan: check (read-only: reads the coprocessor and encoder sites from outside the camera application)"),
+    "W51": ("sdboot/libJit_fx2_W51.so", "9535392da6a4a729abe708bfa9845b5aeb681a4c9a6ef71250cda7ff9c98acff", "RAM only: choose the helper's plan: og2560 (the 3840x2560 open gate, 23.98p/24p: L13 H5 L16 X19 S16)"),
+    "W52": ("sdboot/libJit_fx2_W52.so", "2a2a107c4754c62e57e54c367ca3291628d88ccc9d2edb005e2222aedcafdca4", "RAM only: choose the helper's plan: og2560pal (the 3840x2560 open gate on a PAL-set camera, 25p: L13 P5 L16 X19 S16)"),
+    "W53": ("sdboot/libJit_fx2_W53.so", "59b532cb69262b41ed6cd25c60f0074ec1ac02b2a3295328828087afbc74d678", "RAM only: choose the helper's plan: squeeze (the squeezed open gate: X20 L13 L5 S16)"),
+    "W54": ("sdboot/libJit_fx2_W54.so", "2bcd505ecba1148dbca4cfa7922143e15fd45ac42f51e279c9d9cb39498b392e", "RAM only: choose the helper's plan: og57 (5.7K, 5760x3840 at 300 Mbps on the 100M+ settings, 23.98p/24p: L13 K5 K16 X22 S16)"),
+    "W55": ("sdboot/libJit_fx2_W55.so", "0b45043b29d485f3accf2ee8b7dcaf4d085f9bbeca109b8272611ba9b0a3110a", "RAM only: choose the helper's plan: og57pal (5.7K on a PAL-set camera, 25p: L13 J5 K16 X22 S16)"),
     "W58": ("sdboot/libJit_fx2_W58.so", "ba809b02d9b60f1f26ead86a216791c6acd140343fe58c2ce3b210538ece59fc", "FLASH (one empty file): switch the start-up hook off (/etc/fx2boot/off)"),
     "W59": ("sdboot/libJit_fx2_W59.so", "513df31447ef35181a467a21a23e499249e7efa3b635aad1635edbb6e02fb7b8", "FLASH: switch the start-up hook on again (removes /etc/fx2boot/off)"),
 }
-LOADER_STAGE = ("W1", "W2", "W3", "W4", "W5", "W6", "W7", "W8", "W9", "W10", "W11", "W12", "W13", "W14")
-LOADER_PLANS = {"check": "W50", "og2560": "W51", "og2560pal": "W52", "squeeze": "W53"}                                    # plan name: the step that chooses it
+LOADER_STAGE = ("W1", "W2", "W3", "W4", "W5", "W6", "W7", "W8", "W9", "W10", "W11", "W12", "W13", "W14", "W15", "W16", "W17", "W18")
+LOADER_PLANS = {"check": "W50", "og2560": "W51", "og2560pal": "W52", "squeeze": "W53", "og57": "W54", "og57pal": "W55"}                                    # plan name: the step that chooses it
 LOADER_FLASH = ("W40", "W41", "W58", "W59")
 LOADER_BUILD = "fx2boot_v1"
 # --- loader steps: end

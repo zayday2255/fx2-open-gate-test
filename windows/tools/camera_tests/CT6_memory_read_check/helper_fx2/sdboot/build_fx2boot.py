@@ -40,13 +40,19 @@ FLAGS = ["-target", "aarch64-linux-gnu", "-std=gnu11", "-O1", "-Wall", "-Wextra"
          "-fno-stack-protector", "-fno-builtin", "-fno-asynchronous-unwind-tables", "-Wl,--no-undefined", "-Wl,-z,now", "-g0", "-s",
          "-Wl,-z,max-page-size=4096"]
 MP_DESIGN_H = "expected_mp_ogfile2560_hs_s_fx2_v2.h"       # the kit's L19
-KIT_STEPS = ("L13", "H5", "P5", "L5", "L16", "S16")   # the kit's own libraries the helper runs
+# X22: the kit's K19 (the 5.7K encoder side, 300 Mbps, MP4 headers at 5760x3840) built for a process outside the camera application.
+# Its own design header, so it never shares a table with X19's 4K one (382 sites here against 151).
+MP_DESIGN57_H = "expected_mp_ogfile57r300m1_fx2_v4.h"     # the kit's K19
+KIT_STEPS = ("L13", "H5", "P5", "L5", "L16", "S16", "K5", "J5", "K16")   # the kit's own libraries the helper runs
 # The `check` plan is X21 alone: the kit's read-only check built to run from outside the camera application (GitHub issue #16). It
 # replaces "check X18", which said NOT READY from outside because the check looked for libmpr.so in its own process. X18 is kept in the
 # build (the encoder side's read-only verdict on its own), but no plan uses it.
-PLANS = {"check": "X21", "og2560": "L13 H5 L16 X19 S16", "og2560pal": "L13 P5 L16 X19 S16", "squeeze": "X20 L13 L5 S16"}     # as fx2boot.sh
-PAYLOAD = ("fx2boot.sh", "fx2cp.so", "fx2hook.so", "libJit_fx2_X21.so", "libJit_fx2_X18.so", "libJit_fx2_L13.so", "libJit_fx2_H5.so",
-           "libJit_fx2_P5.so", "libJit_fx2_L5.so", "libJit_fx2_L16.so", "libJit_fx2_X19.so", "libJit_fx2_X20.so", "libJit_fx2_S16.so")
+# og57 / og57pal are the kit's 5.7K plans (5760x3840, 300 Mbps on the 100M and higher settings): the same order as fx2_apply.py's.
+PLANS = {"check": "X21", "og2560": "L13 H5 L16 X19 S16", "og2560pal": "L13 P5 L16 X19 S16", "squeeze": "X20 L13 L5 S16",
+         "og57": "L13 K5 K16 X22 S16", "og57pal": "L13 J5 K16 X22 S16"}     # as fx2boot.sh
+PAYLOAD = ("fx2boot.sh", "fx2cp.so", "fx2hook.so", "libJit_fx2_X21.so", "libJit_fx2_X18.so", "libJit_fx2_X19.so", "libJit_fx2_X20.so",
+           "libJit_fx2_X22.so", "libJit_fx2_L13.so", "libJit_fx2_H5.so", "libJit_fx2_P5.so", "libJit_fx2_L5.so", "libJit_fx2_L16.so",
+           "libJit_fx2_S16.so", "libJit_fx2_K5.so", "libJit_fx2_J5.so", "libJit_fx2_K16.so")
 CTL = (("W30", "MODE_RUN", None, "RAM only: start the start-up loader's helper once, now, from the RAM copy (the chosen plan); no flash is written"),
        ("W40", "MODE_INSTALL", None, "FLASH: install the start-up loader (copies its checked files to /etc/fx2boot and writes /etc/ld.so.preload)"),
        ("W41", "MODE_UNINSTALL", None, "FLASH: uninstall the start-up loader (removes /etc/ld.so.preload first, then /etc/fx2boot and earlier research builds' files)"),
@@ -55,6 +61,8 @@ CTL = (("W30", "MODE_RUN", None, "RAM only: start the start-up loader's helper o
        ("W51", "MODE_PLAN", "og2560", "RAM only: choose the helper's plan: og2560 (the 3840x2560 open gate, 23.98p/24p: L13 H5 L16 X19 S16)"),
        ("W52", "MODE_PLAN", "og2560pal", "RAM only: choose the helper's plan: og2560pal (the 3840x2560 open gate on a PAL-set camera, 25p: L13 P5 L16 X19 S16)"),
        ("W53", "MODE_PLAN", "squeeze", "RAM only: choose the helper's plan: squeeze (the squeezed open gate: X20 L13 L5 S16)"),
+       ("W54", "MODE_PLAN", "og57", "RAM only: choose the helper's plan: og57 (5.7K, 5760x3840 at 300 Mbps on the 100M+ settings, 23.98p/24p: L13 K5 K16 X22 S16)"),
+       ("W55", "MODE_PLAN", "og57pal", "RAM only: choose the helper's plan: og57pal (5.7K on a PAL-set camera, 25p: L13 J5 K16 X22 S16)"),
        ("W58", "MODE_OFF", None, "FLASH (one empty file): switch the start-up hook off (/etc/fx2boot/off)"),
        ("W59", "MODE_ON", None, "FLASH: switch the start-up hook on again (removes /etc/fx2boot/off)"))
 
@@ -429,6 +437,15 @@ def main():
     pin("X19", "libJit_fx2_X19.so", x19, "the kit's level 19 for a process outside the camera application: applies the encoder-side design ogfile2560_hs_s_fx2_v2 (as L19)")
 
     pin("X20", "libJit_fx2_X20.so", x20, "the kit's level 20 for a process outside the camera application: puts back the encoder-side design ogfile2560_hs_s_fx2_v2 (as L20)")
+
+    # X22 / X23: the kit's K19 / K20 (5.7K encoder side) for a process outside the camera application. Same levels, own design header.
+    mp57_flags = FLAGS + ["-Wl,-soname,libJit.so", "-I", str(HELPER), '-DMP_H="%s"' % MP_DESIGN57_H, "-DAVCAM_PHYS=0x401000000UL"]
+    x22 = cc(mp57_flags + ["-DLEVEL=19", gen.name], HERE / "libJit_fx2_X22.so")
+    x23 = cc(mp57_flags + ["-DLEVEL=20", gen.name], HERE / "libJit_fx2_X23.so")
+    for n, b in (("X22", x22), ("X23", x23)):
+        check_freestanding(n, b, "libJit.so")
+    pin("X22", "libJit_fx2_X22.so", x22, "the kit's level 19 for a process outside the camera application: applies the 5.7K encoder-side design ogfile57r300m1_fx2_v4 (as K19)")
+    pin("X23", "libJit_fx2_X23.so", x23, "the kit's level 20 for a process outside the camera application: puts back the 5.7K encoder-side design ogfile57r300m1_fx2_v4 (as K20)")
 
     cp = cc(["-target", "aarch64-linux-gnu", "-std=gnu11", "-O1", "-Wall", "-Wextra", "-Werror", "-fPIC", "-shared", "-nostdlib", "-ffreestanding",
              "-fno-stack-protector", "-fno-builtin", "-fno-asynchronous-unwind-tables", "-Wl,--no-undefined", "-Wl,-z,now", "-g0", "-s",
