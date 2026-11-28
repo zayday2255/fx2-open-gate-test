@@ -7,7 +7,7 @@
 It needs Linux (WSL), qemu-aarch64 and debugfs; no root. What is real and what is a stand-in:
   REAL   the camera's files from the 1.01 update: /lib/ld-2.25.so, libc, /bin/busybox and its applets, /usr/bin/startBTCore.sh, /version.txt,
          libmpr.so, av-cam.bin, cpapp-b.bin; the kit's step libraries (byte for byte the pinned files); every file this folder builds
-         (fx2hook.so, fx2cp.so, fx2boot.sh, X18/X19, the W steps), unchanged.
+         (fx2hook.so, fx2cp.so, fx2boot.sh, X18/X19/X21, the W steps), unchanged.
   REAL   the Linux kernel underneath for files, processes, pipes, /proc/<pid>/maps and /proc/<pid>/mem (qemu-aarch64 runs each AArch64
          program as a Linux process; a private binfmt_misc entry inside a user namespace makes the shell's own exec calls work).
   STAND-IN  the camera application: fake_im.py, a process named im.elf that maps libmpr.so
@@ -437,7 +437,7 @@ def test_hook(pins):
     time.sleep(2)
     log = (SYS / "tmp_wbshd/fx2boot.log").read_text() if (SYS / "tmp_wbshd/fx2boot.log").is_file() else ""
     marks = sorted(p.name for p in (SYS / "tmp_wbshd").iterdir() if p.name.startswith("fx2boot.g"))
-    ok(out == base_out and not err and len(inits) >= 5 and marks == ["fx2boot.g1"] and log.count("START") == 1 and "fx2boot[1]: plan check: check X18" in log,
+    ok(out == base_out and not err and len(inits) >= 5 and marks == ["fx2boot.g1"] and log.count("START") == 1 and "fx2boot[1]: plan check: X21" in log,
        "power-on 1: the hook ran in %d programs, ONE of them started the helper once (mark fx2boot.g1, one START line); the script's result is the baseline's (%.1f s against %.1f s)" % (len(inits), t, base_t))
     for p in (SYS / "tmp").glob("ld.*"):
         p.unlink()
@@ -666,20 +666,19 @@ def test_helper(pins):
     ok(install("check"), "installed with plan check (read-only)")
     app = camera(("L13", "H5", "L16", "S16"))
     log = boot(1, "check")
-    c1 = (SYS / "tmp_wbshd/fx2boot_check.txt").read_text(errors="replace") if (SYS / "tmp_wbshd/fx2boot_check.txt").is_file() else ""
-    x18 = (SYS / "tmp_wbshd/fx2boot_X18.txt").read_text(errors="replace") if (SYS / "tmp_wbshd/fx2boot_X18.txt").is_file() else ""
+    x21 = (SYS / "tmp_wbshd/fx2boot_X21.txt").read_text(errors="replace") if (SYS / "tmp_wbshd/fx2boot_X21.txt").is_file() else ""
     ok("END: plan check, every step done" in log and not cp_writes() and av_now(len(av)) == av and app.memory() == lm and not bad_lines(),
-       "plan check: both steps ran; no transfer towards the coprocessor, av-cam.bin and the application's libmpr.so untouched")
-    ok("== level 18 verdict: READY: every guard is as in the file and every site holds the stock bytes" in x18,
-       "X18, from outside the application, on a stock camera: READY (every guard as in the file, every site stock)")
+       "plan check: the step ran; no transfer towards the coprocessor, av-cam.bin and the application's libmpr.so untouched")
+    ok("VERDICT READY" in x21 and "SAME as the 1.01 update" in x21,
+       "X21 (the kit's check from outside the application), on a stock camera: READY with the identity lines as in the file (issue #16)")
     reads = [ln for ln in (SYS / "emu/pcidma.log").read_text().split("\n") if " read " in ln] if (SYS / "emu/pcidma.log").is_file() else []
-    ok(c1.startswith("fx2read fx2read_v5 check for ILME-FX2 1.01") and len(reads) > 5 and "== done" in c1, "the kit's check library, through fx2cp.so: %d coprocessor reads, result complete" % len(reads))
-    # the read-only encoder check on an applied camera
+    ok(x21.startswith("fx2read fx2read_v5 check for ILME-FX2 1.01") and len(reads) > 5 and "== done" in x21, "X21 through fx2cp.so: %d coprocessor reads, result complete" % len(reads))
+    # the read-only check on an applied camera
     app.stop()
     app = camera(("L13", "H5", "L16", "S16"), av2, lm2)
     log = boot(2, "check")
-    x18 = (SYS / "tmp_wbshd/fx2boot_X18.txt").read_text(errors="replace")
-    ok("== level 18 verdict: APPLIED" in x18, "X18 on a camera whose encoder side is applied: APPLIED")
+    x21 = (SYS / "tmp_wbshd/fx2boot_X21.txt").read_text(errors="replace")
+    ok("TARGET" in x21 and "NOT MAPPED" not in x21, "X21 on a camera whose encoder side is applied: the libmpr sites TARGET, none NOT MAPPED")
     app.stop()
 
     # D10: two processes named im.elf

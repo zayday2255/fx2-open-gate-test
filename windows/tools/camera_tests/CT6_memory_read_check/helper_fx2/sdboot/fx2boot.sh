@@ -44,6 +44,7 @@ step() {
     OUT=busy
     [ -e $RES ] && { say "$S: a result file appeared (a kit session over USB?): it is left alone"; return 1; }
     case $S in
+        X21) LD_PRELOAD="$D/fx2cp.so $L" /bin/busybox true ;;     # the kit's check, outside the application: it reads the coprocessor
         X*) LD_PRELOAD="$L" /bin/busybox true ;;                  # encoder side: no coprocessor transfer
         *) LD_PRELOAD="$D/fx2cp.so $L" /bin/busybox true ;;
     esac
@@ -54,7 +55,12 @@ step() {
     OUT=cut
     grep -q "^== done" $F || { say "$S: the result is not complete (kept in $F)"; return 1; }
     if [ "$2" = read ]; then
-        OUT=READ; say "$S: read; `grep -i -m1 'verdict' $F`"; return 0
+        # a read step reports its verdict; the two lines before it say whether the camera application was found and what its
+        # identity lines gave, so a NOT READY can be read without the result file
+        OUT=READ; say "$S: read; `grep -i -m1 'verdict' $F`"
+        grep -m1 -e '^!! ' $F | sed 's/^/    /' >> $LOG
+        grep -m1 '^file ' $F | sed 's/^/    /' >> $LOG
+        return 0
     elif grep -q "UNDO INCOMPLETE" $F; then
         OUT=undo; say "$S: UNDO INCOMPLETE: take the battery out for 10 s before anything else (kept in $F)"; return 1
     elif grep -q "^DONE: " $F; then
@@ -99,7 +105,7 @@ rm -f $R/fx2boot_*.txt
 [ -f $D/plan ] || stop "no plan is chosen ($D/plan is absent)"
 PLAN=`cat $D/plan`
 case "$PLAN" in
-    check) STEPS="check X18" ;;                      # read-only: coprocessor sites and encoder sites, read from outside the application
+    check) STEPS="X21" ;;                            # read-only: the kit's check built for a process outside the application (X21)
     og2560) STEPS="L13 H5 L16 X19 S16" ;;            # 3840x2560 open gate, 23.98p/24p (the kit's og2560)
     og2560pal) STEPS="L13 P5 L16 X19 S16" ;;         # the same on a PAL-set camera, 25p (the kit's og2560 --pal)
     squeeze) STEPS="X20 L13 L5 S16" ;;               # the squeezed open gate (the kit's squeeze): its encoder side is the stock one

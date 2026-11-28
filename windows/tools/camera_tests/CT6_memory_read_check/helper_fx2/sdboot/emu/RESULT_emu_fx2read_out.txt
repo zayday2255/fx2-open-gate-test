@@ -1,0 +1,11 @@
+emu_fx2read_out.py, libJit_fx2_X21 (GitHub issue #16), 2026-11-28
+kit check 62760 bytes, X21 65072 bytes; 6 libmpr sites, 0 coprocessor sites
+
+  kit-check-app    lm lines: 6, all STOCK
+  kit-check-self   lm lines: {'MAPPED'}
+  x21-app          lm lines: 6, positions ['0x7f5d1cdcd6', '0x7f5d1cdd06', '0x7f5d1cdc5e', '0x7f5d1cdc8e', '0x7f5d11f3dc', '0x7f5d11f428']
+  x21-applied      lm lines: {'TARGET'}
+  x21-noapp        ['!! the camera application (a process named im.elf) was not found']
+  x21-two          ['!! more than one process is named im.elf: it is not known which one is the camera']
+
+ALL PASS

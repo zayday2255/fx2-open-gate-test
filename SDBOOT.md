@@ -26,13 +26,33 @@ This page replaces the notes of the `sdboot-research` branch (`sdboot_research/`
 | `fx2hook.so` | Named in `/etc/ld.so.preload`. Runs in every program the camera starts. In all but one per power-on it makes four system calls and returns. That one starts the helper, after checking every loader file against the SHA-256 list built into the hook. At a cold boot it does nothing. |
 | `fx2boot.sh` | The helper, run by the camera's own shell as a process of its own. It runs the kit's step libraries in the kit's order, reads each result as the kit does, and stops at the first that is not DONE. If the plan cannot be finished it puts the encoder side back to stock. It writes RAM only. |
 | `fx2cp.so` | Gives the step libraries the three coprocessor-transfer functions they take from the camera's `libsencore.so`, in a process outside the camera application. It makes the same calls with the same bytes as Sony's library (compared call by call in an emulator). |
-| `libJit_fx2_L13 / H5 / P5 / L5 / L16 / S16 / check` | The kit's own pinned libraries, unchanged. |
+| `libJit_fx2_L13 / H5 / P5 / L5 / L16 / S16` | The kit's own pinned libraries, unchanged. |
 | `libJit_fx2_X18 / X19 / X20` | The kit's encoder step (read / apply / put back) built for a process outside the camera application. |
+| `libJit_fx2_X21` | The kit's read-only check built for a process outside the camera application: the same sites, guards and verdict, read from the camera application's maps and memory (issue #16; `check` runs this). |
 
 Plans: `og2560` (3840x2560, 23.98p / 24p), `og2560pal` (25p), `squeeze`, and `check` (reads only).
 
 **The camera must be switched on on STILL.** Wait about 20 seconds, then set MOVIE. Switched on on MOVIE, the first step refuses
 (the kit's own rule) and the camera stays stock.
+
+## Issue #16: the check said NOT READY from outside (fixed)
+
+The first tester ran step 1 on a real PAL FX2 (issue #16) and got `check: read; VERDICT NOT READY` while `X18` read the same camera
+as READY in the same second. That was a fault of the loader, not of the camera:
+
+- the kit's read-only check looks for `libmpr.so` in **its own** `/proc/self/maps` and reads the encoder-side sites where that
+  library is mapped **in its own process**. Inside the camera application that is right. Run as the loader's helper it is the wrong
+  process: `busybox true` has no `libmpr.so`, so all six main-processor sites read `NOT MAPPED`, the count of places not as the
+  1.01 update goes up, and the verdict is NOT READY on a completely stock camera.
+- `X18` said READY because it had already been built for exactly this case: it finds the one process named `im.elf` and reads that
+  process's maps and memory.
+
+**The fix (`libJit_fx2_X21`, and the `check` plan now runs it instead of `check X18`):** the kit's check is built once more from its
+own source, with the same four changes the encoder levels already had - the map list is the camera application's, and the library
+bytes are read through its memory file. Sites, guards, the identity lines and the verdict rule are unchanged, so a stock camera
+gives `VERDICT READY` and an applied one gives `TARGET`, exactly as the check does from inside.
+
+Not yet run on a camera: this build is new. `X21` replaces `check` in the `check` plan; `X18` stays in the build but no plan uses it.
 
 ## Try it, in this order
 
@@ -41,7 +61,7 @@ Camera on STILL, fresh power-on, USB (Mass Storage) in. Each step stands on the 
 
 | # | Launcher | Writes | What to expect |
 |---|---|---|---|
-| 1 | `loader_try_readonly` | RAM only, and reads only | Then `loader_status`: `check: read` and `X18: read; == level 18 verdict: READY`. This shows the helper can reach the coprocessor and the application from outside. |
+| 1 | `loader_try_readonly` | RAM only, and reads only | Then `loader_status`: `X21: read; VERDICT READY`. This shows the helper can reach the coprocessor and the application from outside. |
 | 2 | `loader_try_open_gate` | RAM only; camera memory as the kit's apply does | Then `loader_status`: five steps DONE. Unplug, set MOVIE, record: 3840x2560. A battery change undoes all of it. |
 | 3 | `loader_install_open_gate` | **FLASH** | Battery out 10 s. Switch on on STILL, wait 20 s, `loader_status`: the log shows `fx2boot[1]` and five steps DONE. |
 | 4 | (switch off and on, battery in) | | `loader_status`: `fx2boot[2]`, four steps DONE and `X19: NOTHING TO DO`. |

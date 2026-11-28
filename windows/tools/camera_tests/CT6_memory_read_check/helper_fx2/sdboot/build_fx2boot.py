@@ -19,6 +19,7 @@ The compiler is the kit's (zig cc, work\\venv_zig), with the kit's flags.
 """
 import hashlib
 import json
+import os
 import struct
 import subprocess
 import sys
@@ -28,7 +29,9 @@ HERE = Path(__file__).resolve().parent
 KIT = HERE.parent                                  # helper_fx2
 HELPER = KIT.parent / "helper"
 ROOT = KIT.parents[2]                              # a7iv_map, or the published tools folder
-ZIG = [str(ROOT / "work/venv_zig/Scripts/python.exe"), "-m", "ziglang", "cc"]
+# The compiler: the author's venv under the map by default; ZIG_CC overrides it (a plain zig cc on any platform gives the same bytes).
+ZIG = (os.environ["ZIG_CC"].split() if os.environ.get("ZIG_CC") else
+       [str(ROOT / "work/venv_zig/Scripts/python.exe"), "-m", "ziglang", "cc"])
 DEV = ROOT / "work/extracted/fx2_101/0700_part_image/dev"
 BUILD = "fx2boot_v1"
 LIMIT = 65520                                      # the largest library the service file-write command takes
@@ -37,9 +40,12 @@ FLAGS = ["-target", "aarch64-linux-gnu", "-std=gnu11", "-O1", "-Wall", "-Wextra"
          "-fno-stack-protector", "-fno-builtin", "-fno-asynchronous-unwind-tables", "-Wl,--no-undefined", "-Wl,-z,now", "-g0", "-s",
          "-Wl,-z,max-page-size=4096"]
 MP_DESIGN_H = "expected_mp_ogfile2560_hs_s_fx2_v2.h"       # the kit's L19
-KIT_STEPS = ("check", "L13", "H5", "P5", "L5", "L16", "S16")   # the kit's own libraries the helper runs
-PLANS = {"check": "check X18", "og2560": "L13 H5 L16 X19 S16", "og2560pal": "L13 P5 L16 X19 S16", "squeeze": "X20 L13 L5 S16"}     # as fx2boot.sh
-PAYLOAD = ("fx2boot.sh", "fx2cp.so", "fx2hook.so", "libJit_fx2_check.so", "libJit_fx2_X18.so", "libJit_fx2_L13.so", "libJit_fx2_H5.so",
+KIT_STEPS = ("L13", "H5", "P5", "L5", "L16", "S16")   # the kit's own libraries the helper runs
+# The `check` plan is X21 alone: the kit's read-only check built to run from outside the camera application (GitHub issue #16). It
+# replaces "check X18", which said NOT READY from outside because the check looked for libmpr.so in its own process. X18 is kept in the
+# build (the encoder side's read-only verdict on its own), but no plan uses it.
+PLANS = {"check": "X21", "og2560": "L13 H5 L16 X19 S16", "og2560pal": "L13 P5 L16 X19 S16", "squeeze": "X20 L13 L5 S16"}     # as fx2boot.sh
+PAYLOAD = ("fx2boot.sh", "fx2cp.so", "fx2hook.so", "libJit_fx2_X21.so", "libJit_fx2_X18.so", "libJit_fx2_L13.so", "libJit_fx2_H5.so",
            "libJit_fx2_P5.so", "libJit_fx2_L5.so", "libJit_fx2_L16.so", "libJit_fx2_X19.so", "libJit_fx2_X20.so", "libJit_fx2_S16.so")
 CTL = (("W30", "MODE_RUN", None, "RAM only: start the start-up loader's helper once, now, from the RAM copy (the chosen plan); no flash is written"),
        ("W40", "MODE_INSTALL", None, "FLASH: install the start-up loader (copies its checked files to /etc/fx2boot and writes /etc/ld.so.preload)"),
@@ -84,7 +90,7 @@ static int app_find(void)
     static const char want[] = APP_COMM;
     char p[48], c[24];
     int count = 0;
-    i64 fd = sys_open(TEST_ROOT "/proc", 0x4000 /* O_RDONLY | O_DIRECTORY */, 0), n;
+    i64 fd = sys_open("/proc", F_DIR, 0), n;
     if (fd < 0) return 0;
     while ((n = sc(NR_getdents64, fd, (i64)d, sizeof d, 0, 0, 0)) > 0)
         for (i64 q = 0; q < n; ) {
@@ -106,7 +112,7 @@ static int app_find(void)
             q += *(const unsigned short *)(d + q + 16);
         }
     sys_close((int)fd);
-    if (count != 1) return 0;
+    if (count != 1) return count > 1 ? -1 : 0;
     app_pid = 0;
     for (u64 k = 0; one[k]; k++) app_pid = app_pid * 10 + (one[k] - '0');
     app_path(app_maps, one, "/maps");
@@ -175,7 +181,7 @@ MP_EDITS = (
      '        i64 pm = sys_open(TEST_ROOT "/proc/self/mem", F_RDWR, 0);\n'
      '        if (pm < 0) { puts_("!! /proc/self/mem open failed "); putnum(pm); puts_("; nothing is written\\n"); }\n'
      '        else {\n',
-     '    if (!app_find()) puts_("!! the camera application (exactly one process named " APP_COMM ") was not found; nothing is written\\n");\n'
+     '    if (app_find() != 1) { puts_("!! not exactly one process is named " APP_COMM " (see above); nothing is written\\n"); }\n'
      '    else if (!mp_find_lib(&lo, &hi, perms)) puts_("!! " MP_LIB " is not in the camera application\'s list of mappings; nothing is written\\n");\n'
      '    else if (perms[0] != \'r\') puts_("!! the mapping of " MP_LIB " is not readable; nothing is written\\n");\n'
      '    else {\n'
@@ -186,7 +192,7 @@ MP_EDITS = (
      '            puts_("outside build: the camera application is process "); putnum(app_pid); puts_("; its " MP_LIB " is reached through its memory file\\n");\n', 1),
     ('    if (!mp_find_lib(&lo, &hi, perms)) puts_("!! " MP_LIB " is not in this process\'s list of mappings\\n");\n'
      '    else {\n',
-     '    if (!app_find()) puts_("!! the camera application (exactly one process named " APP_COMM ") was not found\\n");\n'
+     '    if (app_find() != 1) { puts_("!! not exactly one process is named " APP_COMM " (see above)\\n"); }\n'
      '    else if (!mp_find_lib(&lo, &hi, perms)) puts_("!! " MP_LIB " is not in the camera application\'s list of mappings\\n");\n'
      '    else {\n'
      '        puts_("outside build: the camera application is process "); putnum(app_pid); puts_("\\n");\n', 1),
@@ -194,6 +200,137 @@ MP_EDITS = (
      '        else lm_read = app_lm_check(lo, hi, &lm);                /* outside build: the camera application\'s memory, entry by entry */', 1),
 )
 
+# ---- the read-only check (fx2read.c) for a process OUTSIDE the camera application: libJit_fx2_X21 (GitHub issue #16) -------------
+# Inside the camera application the check reads libmpr.so where it is mapped in its own process. The loader's helper is a process of its
+# own, so every libmpr.so site reads "NOT MAPPED" and the check says NOT READY on a stock camera (issue #16: X18 said READY in the same
+# second). These edits point the same reads at the camera application's maps and memory - the pair X18 uses - and change nothing else:
+# the same sites, the same guards, the same verdict rule, the same result file.
+OUT_HELPERS = r'''/* ---- FX2 start-up loader, "outside" build of the read-only check (helper_fx2/sdboot/build_fx2boot.py, X21). Like the encoder levels'
+ * outside build: this library does NOT run inside the camera application. The map list it reads is the camera application's, and the bytes
+ * of a mapped library are read through that process's memory file, where the kit's check reads its own. The coprocessor part is unchanged. */
+#define APP_COMM "im.elf"
+#ifndef TEST_ROOT
+#define TEST_ROOT ""                       /* fx2read.c has no host-test prefix; this build reads the camera's real paths */
+#endif
+static char app_maps[48], app_mem[48];
+static i64 app_pid;
+static int app_pm = -1;
+
+/* `len` bytes of the camera application's memory at `addr`, through its memory file (pread64, number 67). A read, never a write. */
+__attribute__((noinline)) static int app_get(u64 addr, u8 *out, u32 len)
+{
+    return app_pm >= 0 && sc(67, app_pm, (i64)out, (i64)len, (i64)addr, 0, 0) == (i64)len;
+}
+
+static void app_path(char *dst, const char *pid, const char *tail)
+{
+    static const char head[] = "/proc/";
+    u64 k = 0;
+    for (u64 i = 0; head[i]; i++) dst[k++] = head[i];
+    for (u64 i = 0; pid[i] && i < 11; i++) dst[k++] = pid[i];
+    for (u64 i = 0; tail[i]; i++) dst[k++] = tail[i];
+    dst[k] = 0;
+}
+
+/* 1 when exactly one process is named APP_COMM; app_pid, app_maps and app_mem are then set. A caller outside the check treats 0 as
+ * "no camera application" and -1 as "more than one" (as the write steps do: there would be no telling which is the camera). */
+static int app_find(void)
+{
+    static u8 d[4096];
+    static char one[16];
+    static const char want[] = APP_COMM;
+    char p[48], c[24];
+    int count = 0;
+    i64 fd = sys_open("/proc", F_DIR, 0), n;
+    if (fd < 0) return 0;
+    while ((n = sc(NR_getdents64, fd, (i64)d, sizeof d, 0, 0, 0)) > 0)
+        for (i64 q = 0; q < n; ) {
+            const char *nm = (const char *)d + q + 19;
+            u64 len = 0; int digits = 1;
+            for (; nm[len]; len++) if (nm[len] < '0' || nm[len] > '9') digits = 0;
+            if (digits && len > 0 && len < 12) {
+                app_path(p, nm, "/comm");
+                i64 cf = sys_open(p, F_RDONLY, 0);
+                if (cf >= 0) {
+                    i64 r = sys_read((int)cf, c, sizeof c - 1);
+                    sys_close((int)cf);
+                    if (r > 0 && c[r - 1] == '\n') r--;
+                    int eq = r == (i64)(sizeof want - 1);
+                    for (i64 k = 0; eq && k < r; k++) if (c[k] != want[k]) eq = 0;
+                    if (eq) { if (!count) for (u64 k = 0; k <= len; k++) one[k] = nm[k]; count++; }
+                }
+            }
+            q += *(const unsigned short *)(d + q + 16);
+        }
+    sys_close((int)fd);
+    if (count != 1) return count > 1 ? -1 : 0;
+    app_pid = 0;
+    for (u64 k = 0; one[k]; k++) app_pid = app_pid * 10 + (one[k] - '0');
+    app_path(app_maps, one, "/maps");
+    app_path(app_mem, one, "/mem");
+    return 1;
+}
+'''
+
+OUT_ID_OLD = ('    puts_("== identity: files of this process\\n");\n'
+              '    for (u64 i = 0; i < sizeof id_files / sizeof id_files[0]; i++) {\n'
+              '        char path[200]; path[0] = 0;\n'
+              '        u64 at = mapped_at(id_files[i].name, 0, path, sizeof path);\n'
+              '        puts_("file "); puts_(id_files[i].name);\n'
+              '        if (!path[0]) { puts_("  NOT MAPPED in this process\\n"); n_other++; continue; }')
+OUT_ID_NEW = ('    puts_("== identity: files of the camera application, process "); putnum(app_pid); puts_("\\n");\n'
+              '    for (u64 i = 0; i < sizeof id_files / sizeof id_files[0]; i++) {\n'
+              '        char path[200]; path[0] = 0;\n'
+              '        u64 at = mapped_at(id_files[i].name, 0, path, sizeof path);\n'
+              '        puts_("file "); puts_(id_files[i].name);\n'
+              '        if (!path[0]) { puts_("  NOT MAPPED in the camera application\\n"); n_other++; continue; }')
+
+OUT_MP_OLD = ('    puts_("== main-processor sites: libmpr.so in this process\\n");\n'
+              '    for (u64 i = 0; i < sizeof lm_sites / sizeof lm_sites[0]; i++) {\n'
+              '        const struct mp_site *e = &lm_sites[i];\n'
+              '        u64 at = mapped_at("/libmpr.so", e->offset, 0, 0);\n'
+              '        puts_("lm "); putaddr(e->offset);\n'
+              '        if (!at || !mapped_at("/libmpr.so", e->offset + e->length - 1, 0, 0)) { puts_("  NOT MAPPED\\n"); n_other++; continue; }\n'
+              '        puts_(" at "); putaddr(at);\n'
+              '        mp_report(e, (const u8 *)at);\n'
+              '    }')
+OUT_MP_NEW = ('    puts_("== main-processor sites: libmpr.so in the camera application\\n");\n'
+              '    for (u64 i = 0; i < sizeof lm_sites / sizeof lm_sites[0]; i++) {\n'
+              '        const struct mp_site *e = &lm_sites[i];\n'
+              '        u8 got[16];\n'
+              '        u64 at = mapped_at("/libmpr.so", e->offset, 0, 0);\n'
+              '        puts_("lm "); putaddr(e->offset);\n'
+              '        if (!at || !mapped_at("/libmpr.so", e->offset + e->length - 1, 0, 0)) { puts_("  NOT MAPPED\\n"); n_other++; continue; }\n'
+              '        if (e->length > 16 || !app_get(at, got, e->length)) { puts_("  !! cannot be read from the camera application\'s memory\\n"); n_other++; continue; }\n'
+              '        puts_(" at "); putaddr(at);\n'
+              '        mp_report(e, got);\n'
+              '    }')
+
+# (old text, new text, how many times the old text must occur)
+OUT_EDITS = (
+    ('static i64 sys_munmap(void *p, u64 len) { return sc(NR_munmap, (i64)p, (i64)len, 0, 0, 0, 0); }',
+     'static i64 sys_munmap(void *p, u64 len) { return sc(NR_munmap, (i64)p, (i64)len, 0, 0, 0, 0); }\n\n' + OUT_HELPERS, 1),
+    # the map list: the camera application's (its memory file is opened here too, for the two reads below)
+    ('    maps_len = read_all("/proc/self/maps", maps, sizeof maps);',
+     '    { int a_ = app_find();                                   /* outside build: the camera application\'s list of mappings */\n'
+     '      if (a_ != 1) { app_say(a_); n_other++; }\n'
+     '      else { app_pm = (int)sys_open(app_mem, F_RDONLY, 0); maps_len = read_all(app_maps, maps, sizeof maps); } }', 1),
+    # app_say: placed here, where puts_ already exists (OUT_HELPERS sit before the output helpers)
+    ('/* ------------------------------------------------------------------ B: identity of the files */',
+     '/* ------------------------------------------------------------------ B: identity of the files */\n'
+     '/* The line a map-list read that could not be made prints: which of the two reasons it was. */\n'
+     'static void app_say(int found)\n'
+     '{\n'
+     '    if (found == 0) puts_("!! the camera application (a process named " APP_COMM ") was not found\\n");\n'
+     '    else if (found < 0) puts_("!! more than one process is named " APP_COMM ": it is not known which one is the camera\\n");\n'
+     '    else puts_("!! the camera application\'s list of mappings could not be read\\n");\n'
+     '}', 1),
+    (OUT_ID_OLD, OUT_ID_NEW, 1),
+    (OUT_MP_OLD, OUT_MP_NEW, 1),
+    ('    mp_part();',
+     '    mp_part();\n'
+     '    if (app_pm >= 0) { sys_close(app_pm); app_pm = -1; }', 1),
+)
 
 def sha(b):
     return hashlib.sha256(b).hexdigest()
@@ -243,9 +380,15 @@ def elf_dyn(b):
             "init_array": dyn.get(27, 0), "fini_array": dyn.get(28, 0)}
 
 
-def check_freestanding(name, b, soname):
+def check_freestanding(name, b, soname, needs=None):
+    """The kit's rule for a library it sends: no import, one constructor, and no bigger than one file write. X21 is the exception
+    that is not an exception at all: like the kit's own check it takes the three coprocessor calls from libsencore.so, which
+    fx2cp.so stands in for, so `needs` names that one library and the three symbols."""
     d = elf_dyn(b)
-    assert not d["needed"] and not d["undefined"], "%s needs %s / imports %s" % (name, d["needed"], d["undefined"])
+    if needs:
+        assert d["needed"] == [needs[0]] and d["undefined"] == sorted(needs[1]), "%s needs %s / imports %s" % (name, d["needed"], d["undefined"])
+    else:
+        assert not d["needed"] and not d["undefined"], "%s needs %s / imports %s" % (name, d["needed"], d["undefined"])
     assert d["soname"] == soname and d["init_array"] == 8 and not d["fini_array"], "%s: soname %s, init_array %d" % (name, d["soname"], d["init_array"])
     assert len(b) <= LIMIT, "%s is %d bytes: over the %d the camera's file-write command takes" % (name, len(b), LIMIT)
 
@@ -297,6 +440,28 @@ def main():
     assert d["needed"] == ["libosal_uipc.so", "libc.so.6"] and d["soname"] == "libsencore.so", d
     assert d["undefined"] == want_und, d["undefined"]
     assert set(d["defined"]) >= {"_Z9dmm_allocjPj", "_Z8dmm_freej", "sen_dma_transfer"} and not d["init_array"], d
+
+    # X21: the kit's read-only check, for a process outside the camera application (GitHub issue #16). Generated from the kit's own
+    # fx2read.c, so the sites and guards it reads cannot drift from the ones the kit checks. It takes the coprocessor functions from
+    # fx2cp.so, as the step libraries do.
+    rgen = HERE / "fx2boot_read_out_gen.c"
+    rsrc = KIT / "fx2read.c"
+    if regen or not rgen.is_file():
+        text = rsrc.read_bytes().decode("utf8").replace("\r\n", "\n")
+        for old, new, count in OUT_EDITS:
+            if text.count(old) != count:
+                raise SystemExit("STOP: fx2read.c holds %d times (wanted %d) the text\n%s" % (text.count(old), count, old[:300]))
+            text = text.replace(old, new)
+        head = ("/* GENERATED by helper_fx2/sdboot/build_fx2boot.py from helper_fx2/fx2read.c (SHA-256 %s). Do not edit.\n"
+                " * It is fx2read.c with the %d text changes of OUT_EDITS: the read-only check for a process OUTSIDE the camera application. */\n"
+                % (sha(rsrc.read_bytes()), len(OUT_EDITS)))
+        rgen.write_bytes((head + text).encode("utf8"))
+        print("generated", rgen.name)
+    x21 = cc(FLAGS + ["-Wl,-soname,libJit.so", "-I", str(KIT), "-DAVCAM_PHYS=0x401000000UL",
+                      rgen.name, str(HERE / "fx2cp.so")], HERE / "libJit_fx2_X21.so")
+    # the three coprocessor calls resolve from fx2cp.so at load time, exactly as the kit's check takes them from libsencore.so
+    check_freestanding("X21", x21, "libJit.so", needs=("libsencore.so", ["_Z8dmm_freej", "_Z9dmm_allocjPj", "sen_dma_transfer"]))
+    pin("X21", "libJit_fx2_X21.so", x21, "the kit's read-only check for a process outside the camera application: the same sites, guards and verdict as the check, read from the camera application's memory (GitHub issue #16)")
     # what the kit's step libraries import from libsencore.so must all be here
     for step in KIT_STEPS:
         b = (KIT / ("libJit_fx2_%s.so" % step)).read_bytes()
