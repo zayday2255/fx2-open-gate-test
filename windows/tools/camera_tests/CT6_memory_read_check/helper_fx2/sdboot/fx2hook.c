@@ -71,49 +71,52 @@ __attribute__((unused)) static u64 power_on_number(void)
     return v;
 }
 
-/* The seconds since this power-on, from /proc/uptime ("40.93 120.05"): 0 when it cannot be read or is not a plain number. Unlike the
- * suspend count this is never 0 after a battery pull, and it is the same in every mount namespace of one boot - measured on an FX2
- * (2026-11-28), where /sys/kernel/debug/suspend_stats reads ABSENT inside the camera application but /proc/uptime reads fine. */
-static u64 uptime_seconds(void)
+/* The seconds since this power-on, from /proc/uptime ("40.93 120.05") in MILLISECONDS, or 0 when it cannot be read.
+ *
+ * Milliseconds, not seconds: the hook runs in the very first program of a boot, when /proc/uptime still reads "0.87" - truncating
+ * that to whole seconds gives 0, and a 0 was treated as "cannot read", so the helper never ran after a battery pull. That was the
+ * second half of the cold-boot fault (2026-11-28). The fraction is what makes an early boot distinguishable from a failure. */
+static u64 uptime_ms(void)
 {
     char b[48];
-    u64 v = 0;
-    int digits = 0;
-    i64 fd = sys_open("/proc/uptime", O_RDONLY, 0);
+    u64 whole = 0, frac = 0;
+    int digits = 0, fd = -1;
+    fd = (int)sys_open("/proc/uptime", O_RDONLY, 0);
     if (fd < 0) return 0;
     i64 n = sys_read(fd, b, sizeof b);
     sys_close(fd);
     if (n < 1) return 0;
-    for (i64 i = 0; i < n; i++) {
-        if (b[i] < '0' || b[i] > '9') break;
-        if (v > 100000000UL) return 0;
-        v = v * 10 + (u64)(b[i] - '0');
+    i64 i = 0;
+    for (; i < n && b[i] >= '0' && b[i] <= '9'; i++) {
+        if (whole > 100000000UL) return 0;
+        whole = whole * 10 + (u64)(b[i] - '0');
         digits++;
     }
-    return digits ? v : 0;
+    if (digits && i < n && b[i] == '.') {                 /* up to three fraction digits, as milliseconds */
+        u64 mul = 100;
+        for (i++; i < n && b[i] >= '0' && b[i] <= '9' && mul; i++) {
+            frac += (u64)(b[i] - '0') * mul;
+            mul /= 10;
+        }
+    }
+    if (!digits) return 0;
+    return whole * 1000UL + frac;
 }
 
-/* One helper per power-on, decided without a clock that can be read anywhere else.
- *
- * Every program of one boot must agree, and a program of the next boot must disagree. /proc/uptime gives the seconds since THIS
- * boot, so "this boot" can only be recognised by writing the uptime of the first program and comparing later ones against it - but a
- * boot lasts hours, so any fixed window is wrong (a program at 3 h must not start a second helper).
- *
- * What is stable within a boot and different across boots is the boot's START time: /proc/uptime says how long the boot has run, so
- * the wall clock of the boot's start is now - uptime. The camera's clock is its own, but it advances by the same amount the uptime
- * does, so this value stays put for the whole boot and jumps when the camera is power-cycled. Two boots cannot share it unless they
- * start in the same second, which is not a thing a person can do.
- *
- * The mark therefore holds the boot's start time, and the hook starts the helper only when the mark is absent or holds a different
- * start time. */
+/* The boot's own start, in milliseconds since the monotonic clock's zero, or 0 when either value cannot be read. */
 static u64 boot_start(void)
 {
     i64 ts[2] = { 0, 0 };
-    u64 up = uptime_seconds();
+    u64 up = uptime_ms();
     if (!up) return 0;
     if (sc(NR_clock_gettime, 1 /* CLOCK_MONOTONIC */, (i64)ts, 0, 0, 0, 0) != 0) return 0;
-    return (u64)ts[0] - up;                    /* monotonic seconds minus the uptime: the boot's own zero */
+    if (ts[0] <= 0) return 0;
+    u64 now = (u64)ts[0] * 1000UL + (u64)ts[1] / 1000000UL;
+    return now - up;                                      /* monotonic milliseconds minus the uptime */
 }
+
+/* One helper per power-on. Every program of a boot must agree and the next boot must disagree; boot_start() above gives the value
+ * that is constant for a boot and different across boots, and this reads the one the last helper wrote. */
 
 /* The start time written in the mark, 0 when there is none. */
 static u64 mark_value(void)
@@ -129,16 +132,18 @@ static u64 mark_value(void)
     return digits ? v : 0;
 }
 
-/* 1 when this program should start the helper: no mark yet, or the mark belongs to an earlier boot. */
-static int claim_boot(void)
+/* 1 when this program should start the helper: no mark yet, or the mark belongs to an earlier boot. *start_out receives the boot's
+ * start time, computed ONCE so the mark and the helper's tag cannot disagree by a millisecond. */
+static int claim_boot(u64 *start_out)
 {
     char num[24];
     u64 start = boot_start();
-    if (!start) return 0;                                /* no uptime or no clock: do nothing rather than guess */
+    *start_out = start;
+    if (!start) { say("no boot time (/proc/uptime or CLOCK_MONOTONIC unreadable): nothing started, mark ", "?"); return 0; }
     if (mark_value() == start) return 0;                 /* another program of this boot already started it */
     utoa(start, num);
     i64 fd = sys_open(RUN_DIR "/fx2boot.mark", O_WRONLY | O_CREAT | O_TRUNC, 0600);
-    if (fd < 0) return 0;
+    if (fd < 0) { say("the mark cannot be written: nothing started, mark ", num); return 0; }
     sys_write(fd, num, slen(num));
     sys_close(fd);
     return 1;
@@ -176,11 +181,12 @@ static void helper(const char *number)
 __attribute__((constructor)) static void fx2hook(void)
 {
     char boot[24];
+    u64 start = 0;
     /* One helper per power-on. Before 2026-11-28 this returned early when the suspend count was 0 - the case after a battery pull
      * AND the case whenever /sys/kernel/debug is not mounted in the camera application's namespace (measured: it reads absent
-     * there). The loader then silently did nothing on the boots people use most. The mark now records the uptime instead. */
-    if (!claim_boot()) return;
-    utoa(uptime_seconds(), boot);
+     * there). The mark now records the boot's own start time, in milliseconds. */
+    if (!claim_boot(&start)) return;
+    utoa(start, boot);
     i64 pid = sc(NR_clone, SIGCHLD, 0, 0, 0, 0, 0);
     if (pid == 0) {
         if (sc(NR_clone, SIGCHLD, 0, 0, 0, 0, 0) == 0) helper(boot);

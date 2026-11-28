@@ -167,6 +167,13 @@ Two further faults were found and fixed while testing this, both of which could 
 - The build compiled `fx2hook.so` **before** writing `fx2boot_manifest.h`, so the hook embedded the previous file sizes. That is the
   same class of fault as the stale hook that refused every boot on 2026-11-28, and it is now impossible to miss:
   `pins_for_runner.py --check` reads the manifest compiled into the hook and fails, naming each file, if it does not match.
+- **The uptime was read in whole seconds, and the hook runs in the boot's first second.** `/proc/uptime` then reads `0.87`, which
+  truncated to `0`, which the code treated as "unreadable" - so the hook still did nothing after a battery pull. It is read in
+  milliseconds now (`0.87` -> `870`). This is why the first fix changed nothing on the camera: the log said
+  `(none: the helper has not run since the battery was last out)`, i.e. the helper never started at all.
+
+`loader_status` now prints `/proc/uptime` and the mark (the boot's start time) so a decision like this can be read from one run
+instead of inferred.
 
 ## Try it, in this order
 

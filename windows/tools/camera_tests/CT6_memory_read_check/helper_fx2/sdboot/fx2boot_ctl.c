@@ -224,9 +224,9 @@ static void block_list(void)
      * of boot: /proc/uptime (seconds since boot, same in every namespace of a boot) and the mark files of earlier power-ons. */
     put("what a power-on can be counted by (read-only):\n");
     probe_line("/proc/uptime", "/proc/uptime");
-    probe_line("/proc/stat btime", "/proc/stat");
+    probe_line("the mark (/tmp_wbshd/fx2boot.mark: the boot's start time)", "/tmp_wbshd/fx2boot.mark");
     probe_line("/sys/kernel/debug/suspend_stats", "/sys/kernel/debug/suspend_stats");
-    probe_dir("earlier power-on marks", "/tmp_wbshd");
+    probe_dir("loader names on the RAM disk", "/tmp_wbshd");
 }
 
 static void run(void)
