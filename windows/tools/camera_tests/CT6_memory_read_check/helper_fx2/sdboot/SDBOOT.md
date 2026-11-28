@@ -142,6 +142,32 @@ enabled", but the card was out at that power-on, so the helper stopped before re
 as a habit: **power on with the card in, wait ~20 seconds for the helper, then set MOVIE.** The patch is applied at power-on, not when
 the switch is flipped to MOVIE; inserting the card afterwards does nothing until the next power-on.
 
+## A battery pull did not apply the patch (found 2026-11-28, fixed)
+
+The tester found the behaviour that mattered most, and it was a design fault:
+
+| Power-on | Result |
+|---|---|
+| battery out and in (cold boot) | **nothing applied** |
+| power switch off and on (warm boot) | 5.7K applied |
+
+The hook decided whether to start the helper by reading `/sys/kernel/debug/suspend_stats`, which counts **completed suspends**, and
+returned early when it read `0`. But that file is **absent inside the camera application's namespace** (measured: `/proc/uptime` reads
+`40.93`, `suspend_stats` reads `absent`), so the count was `0` there regardless of how the camera was turned on. Which boot applied the
+patch was therefore close to chance, and a battery pull - the reset this project recommends - reliably did nothing.
+
+The hook now counts a power-on by the boot's own start time: `/proc/uptime` (seconds since boot, the same in every mount namespace)
+subtracted from `CLOCK_MONOTONIC`. That value is constant for a whole boot and different after a power cycle, so one helper starts per
+power-on and the next boot starts its own. The old suspend count is kept only for the status report.
+
+Two further faults were found and fixed while testing this, both of which could have produced the same symptom:
+
+- The mark file used to be named by a time bucket, which two consecutive boots could share, so the second boot's helper could be
+  refused by its own mark. The mark now records the boot's start time and is compared by value.
+- The build compiled `fx2hook.so` **before** writing `fx2boot_manifest.h`, so the hook embedded the previous file sizes. That is the
+  same class of fault as the stale hook that refused every boot on 2026-11-28, and it is now impossible to miss:
+  `pins_for_runner.py --check` reads the manifest compiled into the hook and fails, naming each file, if it does not match.
+
 ## Try it, in this order
 
 Every command is a plan of `fx2_batch.py` (one USB connection). The launchers in `windows/` and `macos/` are named after them.

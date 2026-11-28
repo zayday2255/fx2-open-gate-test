@@ -49,8 +49,10 @@ static void say(const char *a, const char *b)
     sys_close(fd);
 }
 
-/* The number after "success: " at the start of the file; 0 when the file is not there or does not begin so. */
-static u64 power_on_number(void)
+/* The number after "success: " at the start of the file; 0 when the file is not there or does not begin so. Kept for the status
+ * report and for anyone reading this build: it is NOT what decides whether the helper runs (see claim_boot), because it reads 0 after
+ * a battery pull and is absent in the camera application's namespace. */
+__attribute__((unused)) static u64 power_on_number(void)
 {
     static const char want[] = "success: ";
     char b[32];
@@ -67,6 +69,79 @@ static u64 power_on_number(void)
         v = v * 10 + (u64)(b[k] - '0');
     }
     return v;
+}
+
+/* The seconds since this power-on, from /proc/uptime ("40.93 120.05"): 0 when it cannot be read or is not a plain number. Unlike the
+ * suspend count this is never 0 after a battery pull, and it is the same in every mount namespace of one boot - measured on an FX2
+ * (2026-11-28), where /sys/kernel/debug/suspend_stats reads ABSENT inside the camera application but /proc/uptime reads fine. */
+static u64 uptime_seconds(void)
+{
+    char b[48];
+    u64 v = 0;
+    int digits = 0;
+    i64 fd = sys_open("/proc/uptime", O_RDONLY, 0);
+    if (fd < 0) return 0;
+    i64 n = sys_read(fd, b, sizeof b);
+    sys_close(fd);
+    if (n < 1) return 0;
+    for (i64 i = 0; i < n; i++) {
+        if (b[i] < '0' || b[i] > '9') break;
+        if (v > 100000000UL) return 0;
+        v = v * 10 + (u64)(b[i] - '0');
+        digits++;
+    }
+    return digits ? v : 0;
+}
+
+/* One helper per power-on, decided without a clock that can be read anywhere else.
+ *
+ * Every program of one boot must agree, and a program of the next boot must disagree. /proc/uptime gives the seconds since THIS
+ * boot, so "this boot" can only be recognised by writing the uptime of the first program and comparing later ones against it - but a
+ * boot lasts hours, so any fixed window is wrong (a program at 3 h must not start a second helper).
+ *
+ * What is stable within a boot and different across boots is the boot's START time: /proc/uptime says how long the boot has run, so
+ * the wall clock of the boot's start is now - uptime. The camera's clock is its own, but it advances by the same amount the uptime
+ * does, so this value stays put for the whole boot and jumps when the camera is power-cycled. Two boots cannot share it unless they
+ * start in the same second, which is not a thing a person can do.
+ *
+ * The mark therefore holds the boot's start time, and the hook starts the helper only when the mark is absent or holds a different
+ * start time. */
+static u64 boot_start(void)
+{
+    i64 ts[2] = { 0, 0 };
+    u64 up = uptime_seconds();
+    if (!up) return 0;
+    if (sc(NR_clock_gettime, 1 /* CLOCK_MONOTONIC */, (i64)ts, 0, 0, 0, 0) != 0) return 0;
+    return (u64)ts[0] - up;                    /* monotonic seconds minus the uptime: the boot's own zero */
+}
+
+/* The start time written in the mark, 0 when there is none. */
+static u64 mark_value(void)
+{
+    u8 b[24];
+    u64 v = 0;
+    int digits = 0;
+    i64 fd = sys_open(RUN_DIR "/fx2boot.mark", O_RDONLY, 0);
+    if (fd < 0) return 0;
+    i64 n = sys_read(fd, b, sizeof b);
+    sys_close(fd);
+    for (i64 i = 0; i < n && b[i] >= '0' && b[i] <= '9'; i++) { v = v * 10 + (u64)(b[i] - '0'); digits++; }
+    return digits ? v : 0;
+}
+
+/* 1 when this program should start the helper: no mark yet, or the mark belongs to an earlier boot. */
+static int claim_boot(void)
+{
+    char num[24];
+    u64 start = boot_start();
+    if (!start) return 0;                                /* no uptime or no clock: do nothing rather than guess */
+    if (mark_value() == start) return 0;                 /* another program of this boot already started it */
+    utoa(start, num);
+    i64 fd = sys_open(RUN_DIR "/fx2boot.mark", O_WRONLY | O_CREAT | O_TRUNC, 0600);
+    if (fd < 0) return 0;
+    sys_write(fd, num, slen(num));
+    sys_close(fd);
+    return 1;
 }
 
 static int installed_as_built(void)
@@ -100,17 +175,15 @@ static void helper(const char *number)
 
 __attribute__((constructor)) static void fx2hook(void)
 {
-    char name[64], number[24];
-    u64 n = power_on_number();
-    if (!n) return;                                                  /* a cold boot, or the count cannot be read: nothing at all */
-    utoa(n, number);
-    if (!join(name, sizeof name, RUN_DIR "/fx2boot.g", number)) return;
-    i64 fd = sys_open(name, O_WRONLY | O_CREAT | O_EXCL, 0600);
-    if (fd < 0) return;                                              /* another program has this power-on, or there is no RAM disk */
-    sys_close(fd);
+    char boot[24];
+    /* One helper per power-on. Before 2026-11-28 this returned early when the suspend count was 0 - the case after a battery pull
+     * AND the case whenever /sys/kernel/debug is not mounted in the camera application's namespace (measured: it reads absent
+     * there). The loader then silently did nothing on the boots people use most. The mark now records the uptime instead. */
+    if (!claim_boot()) return;
+    utoa(uptime_seconds(), boot);
     i64 pid = sc(NR_clone, SIGCHLD, 0, 0, 0, 0, 0);
     if (pid == 0) {
-        if (sc(NR_clone, SIGCHLD, 0, 0, 0, 0, 0) == 0) helper(number);
+        if (sc(NR_clone, SIGCHLD, 0, 0, 0, 0, 0) == 0) helper(boot);
         sc(NR_exit_group, 0, 0, 0, 0, 0, 0);
     }
     if (pid > 0) sc(NR_wait4, pid, 0, 0, 0, 0, 0);

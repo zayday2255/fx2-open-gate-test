@@ -219,6 +219,14 @@ static void block_list(void)
     probe_dir("mmcblk0 partitions", "/sys/block/mmcblk0");
     probe_line("mmc_host/mmc0 present", "/sys/class/mmc_host/mmc0/device/present");
     probe_dir("/dev block names", "/dev");
+    /* What a cold boot can be recognised by (2026-11-28). power_on_number() counts COMPLETED SUSPENDS, so it is 0 after a battery
+     * pull and the hook does nothing on exactly the boot people use most. These lines find something that is non-zero on both kinds
+     * of boot: /proc/uptime (seconds since boot, same in every namespace of a boot) and the mark files of earlier power-ons. */
+    put("what a power-on can be counted by (read-only):\n");
+    probe_line("/proc/uptime", "/proc/uptime");
+    probe_line("/proc/stat btime", "/proc/stat");
+    probe_line("/sys/kernel/debug/suspend_stats", "/sys/kernel/debug/suspend_stats");
+    probe_dir("earlier power-on marks", "/tmp_wbshd");
 }
 
 static void run(void)
@@ -418,7 +426,7 @@ static void remove_in(const char *dir, const char *name)
     if (join(path_a, sizeof path_a, dir, "/") && join(path_b, sizeof path_b, path_a, name)) sys_unlink(path_b);
 }
 static void remove_legacy(const char *dir, const char *name) { remove_in(dir, name); put("  removed "); put(dir); put("/"); put(name); put("\n"); }
-static int is_mark(const char *name) { return starts(name, "fx2boot.g") || starts(name, "fx2boot_") || streq(name, "fx2boot.busy"); }
+static int is_mark(const char *name) { return starts(name, "fx2boot.g") || starts(name, "fx2boot_") || streq(name, "fx2boot.busy") || streq(name, "fx2boot.mark"); }
 
 static void run(void)
 {

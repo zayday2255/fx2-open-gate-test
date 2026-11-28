@@ -20,6 +20,7 @@ typedef long i64;
 #define NR_write 64
 #define NR_fsync 82
 #define NR_exit_group 94
+#define NR_clock_gettime 113
 #define NR_setsid 157
 #define NR_clone 220
 #define NR_execve 221

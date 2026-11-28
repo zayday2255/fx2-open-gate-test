@@ -96,8 +96,9 @@ if [ -f $BUSY ]; then
     say "a busy mark older than five minutes is ignored"
 fi
 echo $NOW > $BUSY
-# marks of earlier power-ons, and their step results
-for f in $R/fx2boot.g*; do [ "$f" = "$R/fx2boot.g$N" ] || rm -f "$f"; done
+# Marks of earlier power-ons, and their step results. The hook's own mark (/tmp_wbshd/fx2boot.mark, the uptime of the boot that last
+# started a helper) is NOT removed here: the next boot compares against it to tell "a new boot" from "another program of this one".
+for f in $R/fx2boot.g*; do rm -f "$f"; done
 rm -f $R/fx2boot_*.txt
 
 [ -f /version.txt ] || stop "/version.txt is not there"
