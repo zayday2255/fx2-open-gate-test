@@ -167,6 +167,60 @@ static void outcome_of(const char *dir, const char *name)
     }
 }
 
+/* One line of a file, printed with a label: the first line only, cut to 120 characters (enough to see what answers). */
+static void probe_line(const char *label, const char *path)
+{
+    u8 b[160];
+    put("  "); put(label); put(": ");
+    i64 n = slurp(path, b, sizeof b);
+    if (n <= 0) { put(n == 0 ? "empty\n" : "absent\n"); return; }
+    u64 m = 0;
+    while (m < (u64)n && b[m] != '\n' && b[m] != 0) m++;
+    puttext(b, m > 120 ? 120 : m); put("\n");
+}
+/* Every name in a folder, as one line: the block devices are named by whatever the layer below the camera app calls them. */
+static void probe_dir(const char *label, const char *path)
+{
+    static u8 d[4096];
+    static char names[48][64];
+    u64 count = 0;
+    i64 fd = sys_open(path, O_RDONLY | O_DIRECTORY, 0), n;
+    put("  "); put(label); put(": ");
+    if (fd < 0) { put("absent\n"); return; }
+    while ((n = sc(NR_getdents64, fd, (i64)d, sizeof d, 0, 0, 0)) > 0)
+        for (i64 p = 0; p < n; ) {
+            const char *nm = (const char *)d + p + 19;
+            u64 len = slen(nm);
+            if (!(nm[0] == '.' && (nm[1] == 0 || (nm[1] == '.' && nm[2] == 0))) && len < 64 && count < 48) {
+                for (u64 k = 0; k <= len; k++) names[count][k] = nm[k];
+                count++;
+            }
+            p += *(const unsigned short *)(d + p + 16);
+        }
+    sys_close(fd);
+    if (!count) { put("(empty)\n"); return; }
+    for (u64 i = 0; i < count; i++) { if (i) put(" "); put(names[i]); }
+    put("\n");
+}
+/* The SD card, asked three ways, all read-only: the block layer's own list of devices, the partitions it found, and the uevent of
+ * each device (an SD card's carries its product name). The camera application is never shown the card as a mount. */
+static void block_list(void)
+{
+    probe_dir("/sys/block", "/sys/block");
+    probe_dir("/sys/class/block", "/sys/class/block");
+    probe_dir("/sys/bus/mmc/drivers", "/sys/bus/mmc/drivers");
+    probe_dir("/sys/bus/mmc/devices", "/sys/bus/mmc/devices");
+    probe_line("mmcblk0 size (512-byte sectors)", "/sys/block/mmcblk0/size");
+    probe_line("mmcblk0 removable", "/sys/block/mmcblk0/removable");
+    probe_line("mmcblk0/uevent", "/sys/block/mmcblk0/uevent");
+    probe_line("mmcblk0/device/name", "/sys/block/mmcblk0/device/name");
+    probe_line("mmcblk0/device/type", "/sys/block/mmcblk0/device/type");
+    probe_line("mmcblk0/device/cid", "/sys/block/mmcblk0/device/cid");
+    probe_dir("mmcblk0 partitions", "/sys/block/mmcblk0");
+    probe_line("mmc_host/mmc0 present", "/sys/class/mmc_host/mmc0/device/present");
+    probe_dir("/dev block names", "/dev");
+}
+
 static void run(void)
 {
     char plan[32];
@@ -204,6 +258,11 @@ static void run(void)
     else if (n >= 0) puttext(big + (n > 6000 ? n - 6000 : 0), (u64)(n > 6000 ? 6000 : n));
     put("the loader's names on the RAM disk:\n");
     for_names("/tmp_wbshd", is_ours, list_name, 0);
+    /* The SD card as an on/off switch (experiment, 2026-11-27). The card is NOT in /proc/mounts, even with a card in and the camera
+     * writing to it: the camera application is never shown it. So the switch has to ask the block layer instead. These lines only READ,
+     * and say whether each place answers at all - the first question is which of them exists on an FX2. */
+    put("the SD card, for the on/off switch (read-only; 'absent' means the place does not answer here):\n");
+    block_list();
     put("DONE: status read; nothing was written\n");
     out_end();
 }

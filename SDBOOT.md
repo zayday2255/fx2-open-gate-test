@@ -144,8 +144,23 @@ If step 1 does not give those two lines, stop there and send the session folders
   name, reads it back, checks its SHA-256 and renames it, and writes `ld.so.preload` last.
 - Do not start a kit session in the first half minute after power-on while the loader is installed: the helper and the kit use
   the same result file.
-- Not done: the SD card as the on/off switch (the card is not visible outside the camera application), a camera switched on on
-  MOVIE, 5.7K.
+- Not done: a camera switched on on MOVIE.
+- **The SD card as the on/off switch: the signal is found (2026-11-27, on an FX2).** The old note said the card "is not visible
+  outside the camera application". It is not visible as a *mount* - `/proc/mounts` in the camera application's own process never
+  lists it, with a card in and the camera writing 5.7K clips to it - but it is visible as a **block device**, and cleanly:
+
+  | | card in | card out |
+  |---|---|---|
+  | `/sys/block` | `mmcb` | absent |
+  | `/sys/class/block` | `mmcb`, `mmcb1` | absent |
+  | `/dev` | `mmcb`, `mmcb1` | absent |
+
+  Nothing else in those lists changes between the two runs (`nflasha*`, `cnflasha*`, `ram*`, `loop*` are identical), so a card is
+  present exactly when `/dev/mmcb1` (a formatted card: whole device plus first partition) or `/dev/mmcb` (any card) exists.
+  **`/dev/mmcb-char` stays either way** - it is the slot's controller, not the card - so a switch must test `mmcb`/`mmcb1` and
+  not the `-char` node. The usual names do not apply on this camera: `/sys/block/mmcblk0`, `/sys/bus/mmc/*` and
+  `/sys/class/mmc_host/*` are all absent, and `mmca` is the internal eMMC (`mmca-char` only).
+  Not written yet: the plan step that reads this, and the failure mode to choose (card out = do nothing at all, the safe default).
 
 The full notes, with the evidence for each statement, are `a7iv_map\modding\FX2_SDBOOT.md` in the author's map; the sources and
 the emulation are in `windows/tools/camera_tests/CT6_memory_read_check/helper_fx2/sdboot/`.
