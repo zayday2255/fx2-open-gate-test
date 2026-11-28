@@ -157,7 +157,10 @@ static void outcome_of(const char *dir, const char *name)
         while (e < n && big[e] != '\n') e++;
         const char *l = (const char *)big + a;
         u64 len = (u64)(e - a);
-        if ((len > 5 && (starts(l, "DONE") || starts(l, "NOTHING") || starts(l, "NOT DONE") || starts(l, "!!") || starts(l, "UNDO") || starts(l, "== level")))) {
+        /* The outcome lines of one saved step result. A read-only step's outcome is its VERDICT line (X21, or the kit's own check):
+         * without it the entry was printed with nothing under it. "other " and "lm " carry the bytes a read step reports. */
+        if ((len > 5 && (starts(l, "DONE") || starts(l, "NOTHING") || starts(l, "NOT DONE") || starts(l, "VERDICT") || starts(l, "!!")
+                         || starts(l, "UNDO") || starts(l, "== level") || starts(l, "lm ") || starts(l, "other ")))) {
             put("    "); puttext(big + a, len > 300 ? 300 : len); put("\n");
         }
         a = e + 1;

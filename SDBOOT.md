@@ -54,6 +54,31 @@ gives `VERDICT READY` and an applied one gives `TARGET`, exactly as the check do
 
 Not yet run on a camera: this build is new. `X21` replaces `check` in the `check` plan; `X18` stays in the build but no plan uses it.
 
+## Ran on a camera: the fix works (2026-11-27, ILME-FX2 1.01, NTSC)
+
+Step 1 (`loader_try_readonly`) on the tester's own FX2, from a cold boot on STILL, after the battery was pulled to clear an
+earlier 5.7K encoder patch:
+
+- the kit's own check in the same connection said `VERDICT READY`, `encoder side: stock`, `101 stock, 0 target, 0 other`;
+- all 17 steps passed in one connection, and `libJit_fx2_X21.so` landed on the RAM disk whole (65,072 bytes, read back and compared);
+- the helper started as its own process (`status 0`, camera application **process 543**), and `loader_status` read back its log:
+
+```
+fx2boot[usb]: START build fx2boot_v1, files in /tmp_wbshd/fx2boot
+fx2boot[usb]: plan check: X21
+fx2boot[usb]: camera application: process 543
+fx2boot[usb]: the kit's result file is set aside for this run
+fx2boot[usb]: X21: read; VERDICT READY (every identity check same, every site stock, target or a test design)
+    file /libmpr.so path /usr/lib/libmpr.so mapped 0x7f5cd0e000
+fx2boot[usb]: END: plan check, every step done
+```
+
+**`VERDICT READY` from outside the camera application** is issue #16 answered: the same step reported `NOT READY` before the fix.
+The `file /libmpr.so ... mapped 0x7f5cd0e000` line is the check reaching the camera application's own copy of the library, which is
+exactly what the old build could not do.
+
+Still not run on a camera: steps 2 and 3 (the apply at a power-on, and the install on flash).
+
 ## Try it, in this order
 
 Every command is a plan of `fx2_batch.py` (one USB connection). The launchers in `windows/` and `macos/` are named after them.

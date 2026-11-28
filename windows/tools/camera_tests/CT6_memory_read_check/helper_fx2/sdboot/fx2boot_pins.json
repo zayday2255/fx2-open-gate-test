@@ -206,8 +206,8 @@
   },
   "W42": {
    "file": "libJit_fx2_W42.so",
-   "sha256": "23d08e245cbdce6e5328017931806fb975f930e1c2aa9d73b7319698bd74120c",
-   "size": 19752,
+   "sha256": "c19da95033608f114f18b0480417144c28a13cd5dbd71a1e6f271e9a37275c5f",
+   "size": 19952,
    "what": "read-only: status of the start-up loader (what is installed, the plan, the helper's last report)"
   },
   "W50": {
