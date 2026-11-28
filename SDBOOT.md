@@ -93,6 +93,23 @@ exactly what the old build could not do.
 
 Still not run on a camera: steps 2 and 3 (the apply at a power-on, and the install on flash).
 
+## Step 2 ran on a camera: both open-gate modes (2026-11-27/28, ILME-FX2 1.01, NTSC)
+
+`loader_try_open_gate` (plan `og2560`) and `loader_try_57k` (plan `og57`), each from a cold boot on STILL, then MOVIE:
+
+| Plan | File | Result |
+|---|---|---|
+| `og2560` | `Isaiah20261127_0468.MP4` | **3840 × 2560**, HEVC 4:2:2 10-bit, 23.976p, 34.03 s, 816 frames, 110 Mbps |
+| `og57` | `Isaiah20261127_0469.MP4` | **5760 × 3840**, HEVC 4:2:2 10-bit, 23.976p, 20.02 s, 480 frames, **300.2 Mbps** |
+
+Both: sample aspect 1:1 and display aspect 3:2 (so the extra rows are real, not a squeezed 16:9), all frames decoded with **no error**,
+4 tracks of 24-bit PCM audio and Sony's per-frame metadata track intact. All five steps reported DONE in the helper's log, and the plans
+survived the STILL to MOVIE switch - the step that crashed the image processor in issue #1.
+
+A battery pull (10 s) afterwards returned the camera to stock, as designed: the patch lives in RAM only.
+
+The power switch does **not** do this - it leaves the encoder step applied while the rest goes stock (issue #5). Use the battery pull.
+
 ## Try it, in this order
 
 Every command is a plan of `fx2_batch.py` (one USB connection). The launchers in `windows/` and `macos/` are named after them.
