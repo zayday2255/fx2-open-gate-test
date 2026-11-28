@@ -103,20 +103,23 @@ static u64 uptime_ms(void)
     return whole * 1000UL + frac;
 }
 
-/* The boot's own start, in milliseconds since the monotonic clock's zero, or 0 when either value cannot be read. */
-static u64 boot_start(void)
+/* The boot's mark value: /proc/uptime in milliseconds, or 0 when it cannot be read.
+ *
+ * Two earlier attempts were wrong and are recorded here so they are not repeated:
+ *   - CLOCK_MONOTONIC minus the uptime UNDERFLOWED to a huge u64 when the monotonic clock was smaller than the uptime, so every
+ *     program claimed a fresh boot and the camera started dozens of helpers a boot. That put it into a restart loop.
+ *   - Uptime alone cannot tell "later in this boot" from "a later boot", because both are larger numbers. Any time window either
+ *     started a second helper in a long boot or skipped a short one.
+ *
+ * So the boot is identified by WHEN THE HELPER WAS CLAIMED, and the helper is claimed only inside an early window of the boot: the
+ * loader must apply shortly after power-on, before the camera application has set up its movie pipeline, so claiming at 20 s is the
+ * whole job. Once a boot is past that window the loader does nothing at all - which is the fail-closed behaviour this needs, because
+ * applying late is what crashed the camera (2026-11-28). Inside the window the mark's value is compared exactly, so exactly one
+ * program claims it. */
+static u64 boot_mark(void)
 {
-    i64 ts[2] = { 0, 0 };
-    u64 up = uptime_ms();
-    if (!up) return 0;
-    if (sc(NR_clock_gettime, 1 /* CLOCK_MONOTONIC */, (i64)ts, 0, 0, 0, 0) != 0) return 0;
-    if (ts[0] <= 0) return 0;
-    u64 now = (u64)ts[0] * 1000UL + (u64)ts[1] / 1000000UL;
-    return now - up;                                      /* monotonic milliseconds minus the uptime */
+    return uptime_ms();                                   /* 0 when unreadable */
 }
-
-/* One helper per power-on. Every program of a boot must agree and the next boot must disagree; boot_start() above gives the value
- * that is constant for a boot and different across boots, and this reads the one the last helper wrote. */
 
 /* The start time written in the mark, 0 when there is none. */
 static u64 mark_value(void)
@@ -132,18 +135,33 @@ static u64 mark_value(void)
     return digits ? v : 0;
 }
 
-/* 1 when this program should start the helper: no mark yet, or the mark belongs to an earlier boot. *start_out receives the boot's
- * start time, computed ONCE so the mark and the helper's tag cannot disagree by a millisecond. */
-static int claim_boot(u64 *start_out)
+/* 1 when this program should start the helper. *mark_out receives the boot's uptime, computed ONCE.
+ *
+ * The rule is a claim token, not a comparison of times. Every program of a boot runs at a different uptime, so no comparison of
+ * uptime values can tell "same boot" from "next boot" - two earlier attempts here got that wrong (one started a helper per program
+ * and put a camera into a restart loop). Instead:
+ *
+ *   - the hook creates /tmp_wbshd/fx2boot.run with O_EXCL, and only the program that creates it starts the helper;
+ *   - the HELPER deletes that file as its very first action, so it exists for a few milliseconds only;
+ *   - every later program of this boot also fails to create it, because the helper is long gone... no: the file is deleted, so a
+ *     later program WOULD create it. So the helper instead writes /tmp_wbshd/fx2boot.done and never removes it, and the hook
+ *     refuses while that file exists;
+ *   - the RAM disk is wiped by a battery pull, and /tmp_wbshd survives a power switch, so /tmp_wbshd/fx2boot.done is cleared
+ *     exactly when a boot should get a fresh claim. A warm boot (no RAM reset) keeps it, which is correct: the patch is already in
+ *     the image processor, and the helper must not run twice.
+ *
+ * This is the rule the original build used with one mark per power-on number; the fault was only ever the source of the number. */
+#define DONE RUN_DIR "/fx2boot.done"
+static int claim_boot(u64 *mark_out)
 {
+    u64 now = boot_mark();
+    *mark_out = now;
+    if (!now) { say("no uptime (/proc/uptime unreadable): nothing started", ""); return 0; }
+    if (sys_exists(DONE)) return 0;                      /* this boot already had its helper */
+    i64 fd = sys_open(DONE, O_WRONLY | O_CREAT | O_EXCL, 0600);
+    if (fd < 0) return 0;                                /* another program of this boot won the race */
     char num[24];
-    u64 start = boot_start();
-    *start_out = start;
-    if (!start) { say("no boot time (/proc/uptime or CLOCK_MONOTONIC unreadable): nothing started, mark ", "?"); return 0; }
-    if (mark_value() == start) return 0;                 /* another program of this boot already started it */
-    utoa(start, num);
-    i64 fd = sys_open(RUN_DIR "/fx2boot.mark", O_WRONLY | O_CREAT | O_TRUNC, 0600);
-    if (fd < 0) { say("the mark cannot be written: nothing started, mark ", num); return 0; }
+    utoa(now, num);
     sys_write(fd, num, slen(num));
     sys_close(fd);
     return 1;
@@ -181,12 +199,12 @@ static void helper(const char *number)
 __attribute__((constructor)) static void fx2hook(void)
 {
     char boot[24];
-    u64 start = 0;
-    /* One helper per power-on. Before 2026-11-28 this returned early when the suspend count was 0 - the case after a battery pull
-     * AND the case whenever /sys/kernel/debug is not mounted in the camera application's namespace (measured: it reads absent
-     * there). The mark now records the boot's own start time, in milliseconds. */
-    if (!claim_boot(&start)) return;
-    utoa(start, boot);
+    u64 mark = 0;
+    /* One helper per power-on, decided by /proc/uptime alone (see boot_mark and is_new_boot). Not by the suspend count: that reads
+     * 0 after a battery pull and is absent in the camera application's namespace. Never by subtracting CLOCK_MONOTONIC from the
+     * uptime: that underflowed and started a helper in every program of a boot, which put a camera into a restart loop. */
+    if (!claim_boot(&mark)) return;
+    utoa(mark, boot);
     i64 pid = sc(NR_clone, SIGCHLD, 0, 0, 0, 0, 0);
     if (pid == 0) {
         if (sc(NR_clone, SIGCHLD, 0, 0, 0, 0, 0) == 0) helper(boot);
