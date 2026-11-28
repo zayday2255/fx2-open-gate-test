@@ -40,22 +40,25 @@ def say(msg):
 
 
 def find_camera():
-    """(product id, handle) for the one Sony camera present, or (None, None). A bare libusb find: ~1 ms, no contexts built."""
+    """(what, handle) for the one Sony camera present IN A MODE THE KIT CAN USE, or (None, None).
+
+    Only mass storage (interface class 8) and service mode (class 255) count. PC Remote / HID (class 3, e.g. 054c:0d68) does NOT:
+    service.connect() builds its device lists with MscContext and VendorSpecificContext, so a HID-only appearance makes it raise
+    "libusb sees 0 Sony mass-storage and 0 Sony service devices" - the window is spent for nothing. That is exactly what happened on
+    the first real run (2026-11-28 11:56Z: pounce fired on 0d68, connect() refused, nothing was sent).
+    """
     import usb.core
     ds = list(usb.core.find(find_all=True, idVendor=0x054C))
-    if not ds:
-        return None, None
     for d in ds:
         try:
             cls = {i.bInterfaceClass for c in d for i in c}
         except Exception:
-            return "partial:%04x" % d.idProduct, d      # enumerated but not readable yet
+            continue                                   # enumerated but not readable yet: not usable
         if 8 in cls:
-            return "0f47(msc)", d
+            return "mass storage (0f47)", d
         if 255 in cls:
-            return "%04x(service)" % d.idProduct, d
-    d = ds[0]
-    return "other:%04x" % d.idProduct, d
+            return "service mode (%04x)" % d.idProduct, d
+    return None, None
 
 
 def main():
@@ -79,15 +82,30 @@ def main():
 
     deadline = time.time() + a.wait
     seen = None
+    ignored = None
     while True:
         what, handle = find_camera()
         if what:
             if what != seen:
-                say("APPEARED: %s" % what)
+                say("APPEARED IN A USABLE MODE: %s" % what)
                 seen = what
             break
+        # report modes the kit cannot use, once each, so the log shows what the camera is doing
+        import usb.core
+        try:
+            others = ["%04x/class%s" % (d.idProduct, "".join(str(i.bInterfaceClass) for c in d for i in c))
+                      for d in usb.core.find(find_all=True, idVendor=0x054C)]
+        except Exception:
+            others = []
+        tag = " ".join(others) if others else None
+        if tag != ignored:
+            ignored = tag
+            if tag:
+                say("seen but not usable by the kit: %s (need class 8 or 255)" % tag)
+            else:
+                say("nothing from Sony")
         if time.time() > deadline:
-            say("nothing appeared within %d s; nothing was sent" % a.wait)
+            say("no usable appearance within %d s; nothing was sent" % a.wait)
             return 2
         time.sleep(POLL)
 
