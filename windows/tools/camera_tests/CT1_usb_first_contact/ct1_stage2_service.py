@@ -180,7 +180,7 @@ def connect(session):
         if sys.platform == "darwin":
             take_over_from_macos(session, inner)
         session.log("note", text="SCSI TEST UNIT READY and INQUIRY through PMCA-RE MscDevice")
-        info = MscDevice(inner).getDeviceInfo()
+        info = first_msc_contact(session, inner, MscDevice)
         session.results["msc_usb_id"] = "%04x:%04x" % (msc[0].idVendor, msc[0].idProduct)
         session.results["msc_inquiry"] = {"manufacturer": info.manufacturer, "model": info.model}
         session.say("%s %s is a camera in mass storage mode (%s)"
@@ -203,6 +203,31 @@ def connect(session):
     session.results["service_interface_class"] = 255         # it was listed by interface class 255
     session.say("Found a camera in service mode")
     return libusb.VendorSpecificContext().openDevice(handle)
+
+
+def first_msc_contact(session, inner, msc_device, tries=3, pause=2.0):
+    """TEST UNIT READY + INQUIRY, the first packets to the camera. On macOS the first one can time out right after the
+    mass-storage driver is detached (seen on FX2s, issue 7: the run only went on after a second replug). On a timeout
+    this does the USB mass-storage reset recovery (Bulk-Only Mass Storage Reset, then clear-halt on both bulk
+    endpoints), waits and tries again. Both are standard mass-storage requests: nothing reaches the service side."""
+    from pmca.usb.driver.generic import GenericUsbException
+    for attempt in range(1, tries + 1):
+        try:
+            return msc_device(inner).getDeviceInfo()
+        except GenericUsbException:
+            if sys.platform != "darwin" or attempt == tries:
+                raise
+            session.log("note", text="first mass-storage command timed out (try %d of %d): reset recovery" % (attempt, tries))
+            session.say("The camera did not answer the first USB command; resetting the USB link and trying again (%d of %d)"
+                        % (attempt + 1, tries))
+            for step in (lambda: inner.backend.classInterfaceRequestOut(0xFF, 0, 0),
+                         lambda: inner.backend.clearHalt(inner.epIn[0]),
+                         lambda: inner.backend.clearHalt(inner.epOut[0])):
+                try:
+                    step()
+                except Exception as exc:         # the recovery is best effort; the retry below is the real test
+                    session.log("note", text="reset recovery step failed: %r" % exc)
+            time.sleep(pause)
 
 
 def take_over_from_macos(session, inner):

@@ -1,0 +1,36 @@
+PASS  normal    26 calls into the other libraries, identical in order, arguments and every message byte; results equal
+        dynamic_id 0x2a 0x3d pointer
+        valloc 0x61003c 0x28 0x1
+        set_src 0x7f3d0001
+        snd 0x61003c 2000a5a592010000a5a5a5a510270000a5a5a5a500100100a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5 0x7f3d0001
+        rcv 0x7f3d0001 0x2710
+        free 0x7f3d0001 reply
+        dynamic_id 0x4a 0x0 0x7f3d0001
+        valloc 0x928a0770 0x150 0x1
+        snd_sync 0x928a0770 a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a500fc92010000000040000000a5a50000a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5
+        free 0x928a0770 request
+        open /dev/pcidma 0x2
+        ioctl 0x7 0x40185001 000500004000000000fc9201000000000000007f04000000
+        close 0x7
+        valloc 0x928a0770 0x150 0x1
+        snd_sync 0x928a0770 a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a500e64d020000000000100000a5a50100a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5
+        free 0x928a0770 request
+        open /dev/pcidma 0x2
+        ioctl 0x7 0x40185001 00050100001000000000007f0400000000e64d0200000000
+        close 0x7
+        dynamic_id 0x2a 0x3d pointer
+        valloc 0x61003c 0x28 0x1
+        set_src 0x7f3d0001
+        snd 0x61003c 2300a5a5a5a5a5a534120000a5a5a5a5a5a5a5a5a5a50200a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5 0x7f3d0001
+        rcv 0x7f3d0001 0x2710
+        free 0x7f3d0001 reply
+        dynamic_id 0x4a 0x0 0x7f3d0001
+PASS  dmm       26 calls into the other libraries, identical in order, arguments and every message byte; results equal
+PASS  small     26 calls into the other libraries, identical in order, arguments and every message byte; results equal
+PASS  no_reply  24 calls into the other libraries, identical in order, arguments and every message byte; results equal
+PASS  send      24 calls into the other libraries, identical in order, arguments and every message byte; results equal
+PASS  cache     20 calls into the other libraries, identical in order, arguments and every message byte; results equal
+PASS  sync      20 calls into the other libraries, identical in order, arguments and every message byte; results equal
+PASS  open      22 calls into the other libraries, identical in order, arguments and every message byte; results equal
+PASS  ioctl     26 calls into the other libraries, identical in order, arguments and every message byte; results equal
+ALL PASS

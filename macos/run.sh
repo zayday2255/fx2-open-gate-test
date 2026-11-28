@@ -1,6 +1,6 @@
 #!/bin/bash
 # Shared by the .command launchers: runs the Windows kit's own tools (fx2_run.py or fx2_apply.py) with this folder's Python.
-#   run.sh run <fx2_run.py arguments>      run.sh apply <fx2_apply.py arguments>
+#   run.sh run <fx2_run.py arguments>      run.sh apply <fx2_apply.py arguments>      run.sh batch <fx2_batch.py arguments>
 # macOS keeps its own mass-storage driver on the camera, and only root may take the camera over from it, so a live
 # run goes through sudo. --dry-run and --selftest send nothing and run without it.
 cd "$(dirname "$0")" || exit 1
@@ -11,7 +11,8 @@ close() { echo; read -r -p "Press Return to close. "; exit "$1"; }
 case "$1" in
   run) SCRIPT="$TOOLS/fx2_run.py" ;;
   apply) SCRIPT="$TOOLS/fx2_apply.py" ;;
-  *) echo "run.sh: first argument must be run or apply"; close 2 ;;
+  batch) SCRIPT="$TOOLS/fx2_batch.py" ;;
+  *) echo "run.sh: first argument must be run, apply or batch"; close 2 ;;
 esac
 shift
 if [ ! -x "$PY" ]; then

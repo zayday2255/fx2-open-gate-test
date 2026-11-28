@@ -310,6 +310,15 @@ It changes only the preview, not the recorded file. The firmware also has 1.65x 
 
 **To remove only the screen step:** set STILL and run `windows/screen_putback.cmd`.
 
+## Open gate at power-on, without a computer (experimental; not yet run on an FX2)
+
+`SDBOOT.md` describes a start-up loader that applies the 3840 × 2560 open gate by itself when the camera is switched on on STILL. It grew out of a tester's research branch; that page also says, in short, where that first attempt was stuck and why.
+
+- It is tested in emulation only. Its launchers are `loader_*` in `windows/` and `macos/`.
+- `loader_try_readonly` and `loader_try_open_gate` write nothing to flash: a battery change removes everything they did. Start with those, in that order.
+- `loader_install_*` **writes the camera's flash**. A battery change does not undo it; `loader_uninstall` does.
+- The phone app does not have these steps.
+
 ## If something stops
 
 Every stop prints a reason and "Nothing was sent" or what was sent. Please send that text. Common ones:
@@ -332,5 +341,6 @@ Every stop prints a reason and "Nothing was sent" or what was sent. Please send 
 - `macos/`: `setup.command` and one `.command` launcher per Windows launcher; they run `windows/tools`.
 - `android/FX2-OpenGate.apk`: the phone app, carrying `windows/tools` as published here.
 - `PORT_NOTES.md`: how the A7 IV kit maps onto the FX2, what was checked and how, and what is not known.
+- `SDBOOT.md`: the experimental start-up loader; its sources, builds and offline tests are in `windows/tools/camera_tests/CT6_memory_read_check/helper_fx2/sdboot`.
 
 Built on [Sony-PMCA-RE](https://github.com/ma1co/Sony-PMCA-RE) (vendored under `windows/tools/third_party`, MIT licence).

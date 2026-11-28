@@ -1,0 +1,257 @@
+{
+ "build": "fx2boot_v2",
+ "readcheck_c_sha256_of_generated_source": "25c70b51de67c87e509904aa396e57103283c89d6f2176f7580303990a130d7e",
+ "fx2read_c_sha256_of_generated_source": "7fb8b8993237ce299845af73a322043b57ad7d4d23879471f119ed0759efdbf6",
+ "stage_order": [
+  "W1",
+  "W2",
+  "W3",
+  "W4",
+  "W5",
+  "W6",
+  "W7",
+  "W8",
+  "W9",
+  "W10",
+  "W11",
+  "W12",
+  "W13",
+  "W14"
+ ],
+ "plans": {
+  "check": "X0 X18",
+  "og2560": "L13 H5 L16 X19 S16",
+  "og2560pal": "L13 P5 L16 X19 S16",
+  "squeeze": "X20 L13 L5 S16"
+ },
+ "files": {
+  "fx2boot.sh": {
+   "sha256": "1bd3f484326f3ee7cb78172f20218faf74cc34025b16aa21756d057c6648f4d3",
+   "size": 9042
+  },
+  "fx2cp.so": {
+   "sha256": "317f4264a103e66547a50c12e9e3bf460a472d4100f29b083e8edadff8246152",
+   "size": 6136
+  },
+  "fx2hook.so": {
+   "sha256": "9ec3375867893f3391c8ba132e9dd61575f84debcb11f23f1eae3917a449290c",
+   "size": 7552
+  },
+  "libJit_fx2_X0.so": {
+   "sha256": "c702a2de02a9036c10203b5e4a798c9128f1199ff0d3c532ab1d6cd9bbe2dea7",
+   "size": 66064
+  },
+  "libJit_fx2_X18.so": {
+   "sha256": "95c07824c732fd7d5f2bf93c5853f9cab2ea84913621d5f31f081e8bfc7f5551",
+   "size": 27280
+  },
+  "libJit_fx2_L13.so": {
+   "sha256": "c99682a38445ad82974b94527da56f8ac8caec860a7c5b64ae3e6ba2992f1d4f",
+   "size": 19832
+  },
+  "libJit_fx2_H5.so": {
+   "sha256": "47be321cecb37fcba26c0e2b7e8017c931ad339d37bf4e131d3d46f3ed6f7bf5",
+   "size": 31680
+  },
+  "libJit_fx2_P5.so": {
+   "sha256": "b3b6094d843d59c514e67915019025dba7f23830051648334ee2a81e5f4653d9",
+   "size": 31696
+  },
+  "libJit_fx2_L5.so": {
+   "sha256": "724174438d0aaeae8c4ba1f611371cade6f7224c11c8b1441bd84e11107cafa9",
+   "size": 31680
+  },
+  "libJit_fx2_L16.so": {
+   "sha256": "744dd7eb1b8f0cd79fde6f508b39988e9c92bc37ef1f10f30783ce2ae2ee441a",
+   "size": 16232
+  },
+  "libJit_fx2_X19.so": {
+   "sha256": "42ddc5976b3f70b0e7fea77c9d9f049d596e79959bae689dbae89304863c10fc",
+   "size": 28392
+  },
+  "libJit_fx2_X20.so": {
+   "sha256": "a520bb18c05fd2e7815d8a789ba0a61d86328112ae94b5dffc5a7b820f2e7b49",
+   "size": 28400
+  },
+  "libJit_fx2_S16.so": {
+   "sha256": "dd8bb759cef4dc8f9b3c63722d3c51036217bb67bda5967c88ca093d8b8f9df0",
+   "size": 17368
+  }
+ },
+ "steps": {
+  "X18": {
+   "file": "libJit_fx2_X18.so",
+   "sha256": "95c07824c732fd7d5f2bf93c5853f9cab2ea84913621d5f31f081e8bfc7f5551",
+   "size": 27280,
+   "what": "the kit's level 18 for a process outside the camera application: reads the encoder-side sites of ogfile2560_hs_s_fx2_v2 (read-only)"
+  },
+  "X19": {
+   "file": "libJit_fx2_X19.so",
+   "sha256": "42ddc5976b3f70b0e7fea77c9d9f049d596e79959bae689dbae89304863c10fc",
+   "size": 28392,
+   "what": "the kit's level 19 for a process outside the camera application: applies the encoder-side design ogfile2560_hs_s_fx2_v2 (as L19)"
+  },
+  "X20": {
+   "file": "libJit_fx2_X20.so",
+   "sha256": "a520bb18c05fd2e7815d8a789ba0a61d86328112ae94b5dffc5a7b820f2e7b49",
+   "size": 28400,
+   "what": "the kit's level 20 for a process outside the camera application: puts back the encoder-side design ogfile2560_hs_s_fx2_v2 (as L20)"
+  },
+  "X0": {
+   "file": "libJit_fx2_X0.so",
+   "sha256": "c702a2de02a9036c10203b5e4a798c9128f1199ff0d3c532ab1d6cd9bbe2dea7",
+   "size": 66064,
+   "what": "the kit's read-only check (fx2read) for a process outside the camera application: coprocessor sites through fx2cp.so, the application's files and libmpr.so through /proc"
+  },
+  "W1": {
+   "file": "libJit_fx2_W1.so",
+   "sha256": "54c225f87d908ff4a8b6c03c07be02d4aba60eff2634d2223e2c8d853e78d428",
+   "size": 15608,
+   "what": "RAM only: bring fx2boot.sh (9042 bytes) of the start-up loader to the camera's RAM disk"
+  },
+  "W2": {
+   "file": "libJit_fx2_W2.so",
+   "sha256": "fd2cd066fa8106cf85f2827fd68cc3002e1cf2bb7eaee42dd8b59e8b87d876d7",
+   "size": 12696,
+   "what": "RAM only: bring fx2cp.so (6136 bytes) of the start-up loader to the camera's RAM disk"
+  },
+  "W3": {
+   "file": "libJit_fx2_W3.so",
+   "sha256": "0d1f944903642e7941874c6b7d4f18cc985bf91be55927ce25003593495f2942",
+   "size": 14120,
+   "what": "RAM only: bring fx2hook.so (7552 bytes) of the start-up loader to the camera's RAM disk"
+  },
+  "W4": {
+   "file": "libJit_fx2_W4.so",
+   "sha256": "e588076df171b6c37b701daccde0bc557819d8d66205848bea3e7bd757e6ceeb",
+   "size": 62480,
+   "what": "RAM only: bring libJit_fx2_X0.so (66064 bytes, piece 1 of 2) of the start-up loader to the camera's RAM disk"
+  },
+  "W5": {
+   "file": "libJit_fx2_W5.so",
+   "sha256": "a7fe009eeba09ac211cc79b944025733d8b260677aa8b647f8f3a3a2ef1fbcc9",
+   "size": 16992,
+   "what": "RAM only: bring libJit_fx2_X0.so (66064 bytes, piece 2 of 2) of the start-up loader to the camera's RAM disk"
+  },
+  "W6": {
+   "file": "libJit_fx2_W6.so",
+   "sha256": "dc5360657499384a9885faf6678b801f26be9c5af66f940980eb1f58ea7bf963",
+   "size": 33872,
+   "what": "RAM only: bring libJit_fx2_X18.so (27280 bytes) of the start-up loader to the camera's RAM disk"
+  },
+  "W7": {
+   "file": "libJit_fx2_W7.so",
+   "sha256": "165cec4c12de773203e8cbb787c68b7c764e65bca244dc07ace2490cd88d70b0",
+   "size": 26424,
+   "what": "RAM only: bring libJit_fx2_L13.so (19832 bytes) of the start-up loader to the camera's RAM disk"
+  },
+  "W8": {
+   "file": "libJit_fx2_W8.so",
+   "sha256": "3f490ae8df4800490e010e6b609027efd0ba4ff1e2b5e7d36379ece6b95cd85d",
+   "size": 38272,
+   "what": "RAM only: bring libJit_fx2_H5.so (31680 bytes) of the start-up loader to the camera's RAM disk"
+  },
+  "W9": {
+   "file": "libJit_fx2_W9.so",
+   "sha256": "077156c2a7c1af1f51fb0f432ebb104e643278af9ef9851935050af3456184ec",
+   "size": 38288,
+   "what": "RAM only: bring libJit_fx2_P5.so (31696 bytes) of the start-up loader to the camera's RAM disk"
+  },
+  "W10": {
+   "file": "libJit_fx2_W10.so",
+   "sha256": "9f5d99c65b868864271ade42787950c2c382ffb2eecaf2a3a67dbadba268136d",
+   "size": 38272,
+   "what": "RAM only: bring libJit_fx2_L5.so (31680 bytes) of the start-up loader to the camera's RAM disk"
+  },
+  "W11": {
+   "file": "libJit_fx2_W11.so",
+   "sha256": "3ac05cd72ae7265bb9e8fab876902681995dc770daa6c550dbf808e9302c06ec",
+   "size": 22824,
+   "what": "RAM only: bring libJit_fx2_L16.so (16232 bytes) of the start-up loader to the camera's RAM disk"
+  },
+  "W12": {
+   "file": "libJit_fx2_W12.so",
+   "sha256": "4d7bb1b544f314681eb4d2f55514febbccebfd1a8744eb58890a76c4ad0978c2",
+   "size": 34984,
+   "what": "RAM only: bring libJit_fx2_X19.so (28392 bytes) of the start-up loader to the camera's RAM disk"
+  },
+  "W13": {
+   "file": "libJit_fx2_W13.so",
+   "sha256": "b7a74bc39d332925e158b3dda3b213aba41405f365b5e2f25d0dd6e1cba74f84",
+   "size": 34992,
+   "what": "RAM only: bring libJit_fx2_X20.so (28400 bytes) of the start-up loader to the camera's RAM disk"
+  },
+  "W14": {
+   "file": "libJit_fx2_W14.so",
+   "sha256": "ebfc898327cec057868120a1c9a3c4726de175c0af0df4c572abdbb0b0cef2d9",
+   "size": 23960,
+   "what": "RAM only: bring libJit_fx2_S16.so (17368 bytes) of the start-up loader to the camera's RAM disk"
+  },
+  "W30": {
+   "file": "libJit_fx2_W30.so",
+   "sha256": "54407e15009cbe6e6998ad10127281b0e75024696d569ae25af41d3f8528b8cd",
+   "size": 11632,
+   "what": "RAM only: start the start-up loader's helper once, now, from the RAM copy (the chosen plan); no flash is written"
+  },
+  "W40": {
+   "file": "libJit_fx2_W40.so",
+   "sha256": "de3fc5579ff4a9ed0b40c9e2cf6ae2f6d648d7a68060eeb0c1198a9425ba9aea",
+   "size": 15056,
+   "what": "FLASH: install the start-up loader (copies its checked files to /etc/fx2boot and writes /etc/ld.so.preload)"
+  },
+  "W41": {
+   "file": "libJit_fx2_W41.so",
+   "sha256": "467c00c9b174c70df6f18e3e5fa601fbfd5e72a624a6574b19a178c85eb234db",
+   "size": 10248,
+   "what": "FLASH: uninstall the start-up loader (removes /etc/ld.so.preload first, then /etc/fx2boot and earlier research builds' files)"
+  },
+  "W42": {
+   "file": "libJit_fx2_W42.so",
+   "sha256": "dd387b5db3f462bc429b60e48cf672527a2308f418e9bc4c2533c7885e52f285",
+   "size": 20544,
+   "what": "read-only: status of the start-up loader (what is installed, the plan, the helper's last report)"
+  },
+  "W43": {
+   "file": "libJit_fx2_W43.so",
+   "sha256": "53e99f46202f10c9878170356aa7ca66efc23c2a0be24f32231447fb400e9629",
+   "size": 7776,
+   "what": "read-only: the whole result of every step of the helper's last run, and its log (for the session folder)"
+  },
+  "W50": {
+   "file": "libJit_fx2_W50.so",
+   "sha256": "355b6dfc13e96e5bb18c30287cd33d0b3b1c0d7cfdb15b1e0afed0b27c016e84",
+   "size": 5304,
+   "what": "RAM only: choose the helper's plan: check (read-only: reads the coprocessor and encoder sites from outside the camera application)"
+  },
+  "W51": {
+   "file": "libJit_fx2_W51.so",
+   "sha256": "064bc0b5527deb2a83fd5a90d71b634bbc8f3f83aa98ebc1ae9920e563dbf0c8",
+   "size": 5328,
+   "what": "RAM only: choose the helper's plan: og2560 (the 3840x2560 open gate, 23.98p/24p: L13 H5 L16 X19 S16)"
+  },
+  "W52": {
+   "file": "libJit_fx2_W52.so",
+   "sha256": "444b5f00598a8f042161677d6d36cfed62b4c8b36d510418c15519e42077ee1d",
+   "size": 5744,
+   "what": "RAM only: choose the helper's plan: og2560pal (the 3840x2560 open gate on a PAL-set camera, 25p: L13 P5 L16 X19 S16)"
+  },
+  "W53": {
+   "file": "libJit_fx2_W53.so",
+   "sha256": "1a682332cc79d6e8cba978b95476e5fce525c4bc2391ec5c796abe8c2d4dc207",
+   "size": 5344,
+   "what": "RAM only: choose the helper's plan: squeeze (the squeezed open gate: X20 L13 L5 S16)"
+  },
+  "W58": {
+   "file": "libJit_fx2_W58.so",
+   "sha256": "ba809b02d9b60f1f26ead86a216791c6acd140343fe58c2ce3b210538ece59fc",
+   "size": 5312,
+   "what": "FLASH (one empty file): switch the start-up hook off (/etc/fx2boot/off)"
+  },
+  "W59": {
+   "file": "libJit_fx2_W59.so",
+   "sha256": "513df31447ef35181a467a21a23e499249e7efa3b635aad1635edbb6e02fb7b8",
+   "size": 4648,
+   "what": "FLASH: switch the start-up hook on again (removes /etc/fx2boot/off)"
+  }
+ }
+}

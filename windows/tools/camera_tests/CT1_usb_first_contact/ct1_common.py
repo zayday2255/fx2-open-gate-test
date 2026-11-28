@@ -251,6 +251,13 @@ def unmount_sony_disks(session):
     for row in rows:
         for disk in row["disks"]:
             r = subprocess.run(["diskutil", "unmountDisk", "/dev/" + disk], capture_output=True, text=True, timeout=60)
+            if r.returncode != 0:
+                # Spotlight indexing the card can hold it (issue 7): switch indexing off for the camera's card and retry once.
+                session.log("unmount", disk=disk, code=r.returncode, out=(r.stdout + r.stderr).strip(), retry="mdutil -i off")
+                for vol in Path("/Volumes").glob("*/PRIVATE/M4ROOT"):
+                    subprocess.run(["mdutil", "-i", "off", str(vol.parents[1])], capture_output=True, timeout=30)
+                time.sleep(2)
+                r = subprocess.run(["diskutil", "unmountDisk", "/dev/" + disk], capture_output=True, text=True, timeout=60)
             text = (r.stdout + r.stderr).strip()
             session.log("unmount", disk=disk, code=r.returncode, out=text)
             if r.returncode != 0:

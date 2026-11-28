@@ -331,7 +331,7 @@ def main():
     ap.add_argument("--no-movie-session", action="store_true", help="with apply or screen: leave out the closing read-only session in movie mode")
     ap.add_argument("--no-meta", action="store_true", help="with apply, og2560, og57 and the S-I forms: the encoder step without the MP4 header size (N19 / M19); the headers keep saying 3840x2160")
     ap.add_argument("--ntsc", action="store_true", help="the camera is set to NTSC (23.98p): the sensor-side steps L5 / H5")
-    ap.add_argument("--pal", action="store_true", help="the camera is set to PAL (25p): the sensor-side steps Q5 / P5 (mode 0x880)")
+    ap.add_argument("--pal", action="store_true", help="the camera is set to PAL (25p): the sensor-side steps Q5 / P5 / J5 (mode 0x880)")
     a = ap.parse_args()
     steps = STEPS[a.what]
     family = "NTSC"
@@ -403,7 +403,7 @@ def main():
             say("  TEST 6 IS A DIAGNOSTIC STEP ONLY: look at the screen, but do NOT press REC. The encoder is still set for 2,160 rows; on an FX2 a recording")
             say("  in this state froze the camera until the battery was pulled (GitHub issue 5). For clips, use og2560.")
         if family == "PAL":
-            say("  PAL: the sensor-side step is %s, made for mode 0x880 (25p); it works on an FX2 set to PAL (issue 5)." % next(k for k in steps if k[0] in "QP"))
+            say("  PAL: the sensor-side step is %s, made for mode 0x880 (25p); it works on an FX2 set to PAL (issue 5)." % next(k for k in steps if k in PAL_STEPS.values()))
     elif a.what in TESTS:
         say("This is %s of the diagnostic ladder. On the first FX2 test the whole apply worked, but MOVIE ended in a forced" % a.what)
         say("  exception and a restart. This test applies only %s, so that the result says which part the FX2 does not take." % " + ".join(steps))

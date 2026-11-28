@@ -30,5 +30,5 @@ sudo /bin/bash -c '
   exit $status' go "$PY" "$TOOLS" "$PRIVATE" "$PLAN"
 status=$?
 echo
-[ $status -eq 0 ] && echo ">>> Done. Unplug, set MOVIE, shoot (4K 24p, SteadyShot Off). Do not power off." || echo ">>> Stopped (status $status). See the lines above."
+[ $status -eq 0 ] && echo ">>> Done. Unplug, set MOVIE, shoot (4K 24p on NTSC, 25p on PAL; SteadyShot Off). Do not power off." || echo ">>> Stopped (status $status). See the lines above."
 done_ $status

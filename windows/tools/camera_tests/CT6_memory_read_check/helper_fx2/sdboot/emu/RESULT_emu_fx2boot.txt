@@ -1,0 +1,89 @@
+emu_fx2boot.py, build fx2boot_v2, 2026-11-28 11:57:23
+PASS  sandbox: the camera's busybox and loader run (45002_02.2025101101 | BusyBox v1.34.1 (2024-07-17 18:09:30 JST) multi-call binary.)
+PASS  W42 status on a stock camera: nothing installed, nothing on the RAM disk; flash untouched
+PASS  W40 install with no files on the RAM disk: refused, flash untouched
+PASS  W30 run now with no files on the RAM disk: refused, nothing started
+PASS  W5 (a second piece) before its first piece: refused
+PASS  W1..W14: every piece DONE, the 13 files on the RAM disk are the build's byte for byte; flash untouched
+PASS  W30 run now without a plan: refused
+PASS  W40 install without a plan: refused, flash untouched
+PASS  W51 plan og2560: written to the RAM copy only (the loader is not installed)
+PASS  W40 install with one bit of one RAM file changed: refused, flash untouched
+PASS  W40 install while /etc/ld.so.preload holds another build's line: refused, that file untouched
+PASS  W40 install where the kernel's suspend count reads 0 (the hook could never start anything): refused
+PASS  W40 install: /etc holds exactly the 13 files, the plan and ld.so.preload = '/etc/fx2boot/fx2hook.so\n'; nothing else on flash changed
+PASS  W42 status: INSTALLED, every file this build's, plan og2560; flash untouched
+PASS  W52 plan og2560pal on an installed loader: the RAM copy's plan changes, the installed one stays (flash untouched)
+PASS  W40 again: the installed copy is renewed with the RAM copy's plan (og2560pal); ld.so.preload was already this loader's
+PASS  W58 / W59: the off switch is made, made again (nothing to do), removed
+PASS  W42 status with a damaged installed file: says so
+PASS  W41 uninstall: ld.so.preload, /etc/fx2boot, the earlier builds' files and the RAM copy are gone; a file that is not ours stays
+PASS  W41 again on a clean camera: DONE, nothing to remove; flash as shipped
+PASS  a step loaded while an earlier result is still there: does nothing at all (the kit's rule)
+PASS  baseline, nothing installed: the camera's startBTCore.sh ends 0 with one pid in /tmp_bt/bsa_s_pid (3.1 s)
+PASS  installed for the hook tests (plan check; no camera application in the sandbox, so the helper only waits)
+PASS  cold boot (suspend count 0): the hook's constructor ran in 9 programs of the script and did nothing: no mark, no log, no helper; the script's result is the baseline's
+PASS  power-on 1: the hook ran in 9 programs, ONE of them started the helper once (mark fx2boot.g1, one START line); the script's result is the baseline's (3.1 s against 3.1 s)
+PASS  the same power-on, the script run again: no second helper
+PASS  while the helper is alive (waiting for the camera application): a pipeline of the camera's programs ends at once, no descriptor of theirs is held
+PASS  no camera application: the helper gives up after 30 s, says so, removes its busy mark; flash untouched
+PASS  power-on 2 with the off switch: the hook starts nothing and says so
+PASS  power-on 3 with one installed file changed by one byte: the hook starts nothing and names the file
+PASS  the hook file missing: the camera's loader says 'cannot be preloaded ... ignored' and every program runs as in the baseline
+PASS  the hook file empty: the same, every program runs as in the baseline
+PASS  HAZARD, as the camera's loader behaves: a hook file cut short (1000, 3000, 6000 of 7552 bytes) is not ignored, the program is killed at start. This is why the install step never writes the hook in place (new name, read back, SHA-256, rename) and writes ld.so.preload last
+PASS  after W41 uninstall: the script runs as in the baseline, nothing is preloaded, /etc is empty
+PASS  model camera of L13 (from the kit's emulation): after its DONE run every one of its 16 bytes holds the new value
+PASS  model camera of H5 (from the kit's emulation): after its DONE run every one of its 870 bytes holds the new value
+PASS  model camera of P5 (from the kit's emulation): after its DONE run every one of its 870 bytes holds the new value
+PASS  model camera of L5 (from the kit's emulation): after its DONE run every one of its 6055 bytes holds the new value
+PASS  model camera of L16 (from the kit's emulation): after its DONE run every one of its 4 bytes holds the new value
+PASS  model camera of S16 (from the kit's emulation): after its DONE run every one of its 72 bytes holds the new value
+PASS  installed with plan og2560
+PASS  power-on 1 (after a battery change), plan og2560: L13, H5, L16, X19, S16 each DONE, in that order
+PASS  coprocessor memory: all 962 site bytes of L13+H5+L16+S16 hold the designs' values; the transfer log shows exactly the 898 that differ from stock changed, stock to new, and no malformed request
+PASS  encoder side, from outside the application: av-cam.bin holds its 101 sites and the application's libmpr.so its 6, every other byte unchanged
+PASS  the helper wrote no flash
+PASS  X19 found the camera application by name (process 2460192) and its libmpr.so mapping (0x78ba06400000) in /proc
+PASS  the camera's loader took fx2cp.so where the step library asks for libsencore.so: the camera's own /usr/lib/libsencore.so (present) was not opened
+PASS  the same power-on, another program started: no second helper run
+PASS  power-on 2 (switch off and on, battery in: coprocessor memory stock again, encoder side still in place): four steps DONE, X19 NOTHING TO DO
+PASS  coprocessor memory after power-on 2: all 962 site bytes of L13+H5+L16+S16 hold the designs' values; the transfer log shows exactly the 898 that differ from stock changed, stock to new, and no malformed request
+PASS  encoder side unchanged by power-on 2
+PASS  power-on 3 with the kit's last result file still there: the helper sets it aside, runs the plan, and puts it back byte for byte
+PASS  coprocessor memory after power-on 3: all 962 site bytes of L13+H5+L16+S16 hold the designs' values; the transfer log shows exactly the 898 that differ from stock changed, stock to new, and no malformed request
+PASS  power-on 4, the first step cannot be done while the encoder side is in place: nothing written to the coprocessor, and X20 puts av-cam.bin and the application's libmpr.so back to stock, byte for byte
+PASS  fx2cp.so wrote the reason to the log
+PASS  power-on 5 with another firmware's /version.txt: the helper stops at once, nothing is written
+PASS  installed with plan og2560 (for a PAL-set model camera)
+PASS  plan og2560 on a PAL-set camera: L13 done, H5 refuses (as the kit's does there), the helper stops: only L13's bytes changed, the encoder side is checked stock (X20: nothing to do)
+PASS  installed with plan og2560pal
+PASS  PAL-set model camera, plan og2560pal: L13, P5, L16, X19, S16 each DONE
+PASS  coprocessor memory (PAL): all 962 site bytes of L13+P5+L16+S16 hold the designs' values; the transfer log shows exactly the 898 that differ from stock changed, stock to new, and no malformed request
+PASS  encoder side (PAL): as designed
+PASS  installed with plan squeeze
+PASS  plan squeeze: X20 (nothing to do), L13, L5, S16 each DONE
+PASS  coprocessor memory (squeeze): all 6143 site bytes of L13+L5+S16 hold the designs' values; the transfer log shows exactly the 742 that differ from stock changed, stock to new, and no malformed request
+PASS  plan squeeze leaves the encoder side stock
+PASS  plan squeeze on a camera whose encoder side was still in place: X20 puts it back first, then L13, L5, S16
+PASS  installed with plan check (read-only)
+PASS  plan check: both steps ran; no transfer towards the coprocessor, av-cam.bin and the application's libmpr.so untouched
+PASS  X18, from outside the application, on a stock camera: READY (every guard as in the file, every site stock)
+PASS  X0, the kit's check built for outside: it found the camera application (process 2461299), took ITS list of mappings, and made 58 coprocessor reads through fx2cp.so
+PASS  X0 on a stock camera, from outside: VERDICT READY, 0 places not as the 1.01 update (the kit's own check counts 9 there: 3 files and 6 libmpr.so sites it looks for in its own process)
+PASS  X0 from outside states what the kit's check states INSIDE the application for the same camera: all 172 lines equal (code pages, sites, files, libmpr.so, av-cam.bin, verdict)
+PASS  the helper's log says what X0 read, in 8 lines: the buffer the memory manager gave, code pages, sites, files, libmpr.so, av-cam.bin, the count
+PASS  W42 status after it: X0's buffer line, its count and its verdict, and the helper's log with the lines above
+PASS  W43 report: the log and the whole of both results (21114 + 15025 bytes), every line behind '| '; its one outcome line is its own
+PASS  the read-only plan, W42 and W43 wrote no flash
+PASS  X18 on a camera whose encoder side is applied: APPLIED
+PASS  X0 there (libmpr.so on disk stock, the application's memory changed): VERDICT READY, its 6 libmpr.so sites and av-cam.bin's 101 read TARGET, through the memory file and /dev/mem
+PASS  X0 on a PAL-set model camera (a real PAL FX2's stored records): VERDICT READY, all 173 lines as the kit's check states them inside the application
+PASS  the memory manager refuses the buffer: the log names it (buffer allocation failed, fx2cp's own line, 0 code pages), the files and libmpr.so are still read, verdict NOT READY
+PASS  two processes named im.elf: the helper stops, nothing is read or written
+PASS  W30 run now (RAM copy, loader not installed): the helper ran plan og2560 at once, every step DONE
+PASS  W30's own result file (which the kit leaves in place) was set aside for the run and is back unchanged
+PASS  coprocessor memory (run now): all 962 site bytes of L13+H5+L16+S16 hold the designs' values; the transfer log shows exactly the 898 that differ from stock changed, stock to new, and no malformed request
+PASS  run now: encoder side as designed; flash untouched
+PASS  W42 status afterwards shows the helper's log and each step's outcome line
+ALL PASS (87 checks)

@@ -122,21 +122,48 @@ WRITE_STEPS = {
     # 1.95:1 (helper/expected_words_dsq15_fx2_v1.h). On top of S16 only (its stock bytes are S16's). Display only. Not run on any camera.
     "A16": ("libJit_fx2_A16.so", "cd6f420299a297aab6c2df3665e3b799946615a4220f42d5a4f04e87d1119886", "LOCAL: De-Squeeze Display 1.3x entry shows 2.25:1 for 1.5x anamorphic lenses (dsq15_fx2_v1, on top of S16)"),
     "A17": ("libJit_fx2_A17.so", "f190f3c211b501d1ea8291439d2092b254c5be7a4be8844450eaafe1e0ac4764", "LOCAL: put back S16's 1.3x shape (1.95:1)"),
-    # LOCAL (2026-11-27) SD-boot test: these WRITE TO FLASH (/setting), not RAM — the first persistent write in this kit. Delivered by the
-    # same guarded Jiritsu path (SHA-pin, one write + deletes, auto-removed), but what the loaded library does (write /setting) the packet
-    # guard cannot police. Recovery: V17, or delete /setting/mode/preload over USB service mode, or a stock firmware update. See FX2_Report/sdboot_test/RUNBOOK.md.
-    "V16": ("libJit_fx2_V16.so", "8c4236211ab1927ecabd0a705db9497309c67e677d2b7b51443e60e55c6f8758", "LOCAL/FLASH: install milestone-1 process-aware preload (marks which processes ld.so.preload loads into, esp. im.elf)"),
-    "V17": ("libJit_fx2_V17.so", "c3f42e5f7b3d7290b9a517ac1570e24bbc5209318c59b14e3125e84fa0228092", "LOCAL/FLASH: remove /etc/ld.so.preload and every /etc fx2* marker (getdents cleanup) + /setting"),
-    "V18": ("libJit_fx2_V18.so", "7119d7ee914eab9b9d2659837cbd8372d02f1f54e46a91033e4ccd994c8aa9eb", "LOCAL: read /etc/fx2_preload_ran and report whether the /etc/ld.so.preload fired (read-only)"),
-    "V20": ("libJit_fx2_V20.so", "2615ed910db1bf1803e69b3cd39b4be1ffff1b458161162922e74818d6f4c3ac", "LOCAL: list /etc processes that loaded the preload (read-only, getdents)"),
-    "V24": ("libJit_fx2_V24.so", "5f9e95e6f8d09c20e14b0926f577a1a8203ff4da364ca40a61df077c099b0663", "LOCAL: im.elf maps - bytes + lib/ld/marker presence (read-only)"),
-    "V23": ("libJit_fx2_V23.so", "06701a5abb75e786d29163111701b32a12326f5e80d88da9777cd8c935a0111d", "LOCAL: scan im.elf /proc/self/maps for the preload marker - read-only"),
-    "V22": ("libJit_fx2_V22.so", "09b3905827db7ed418a4e0efcca832bf8a3204b877c11a0fd86d2214fa597369", "LOCAL: read im.elf AT_SECURE (auxv) + LD_/GLIBC env - read-only"),
-    "V21": ("libJit_fx2_V21.so", "370c8eb7d3f4bef5559b10c50442629ddeba7a4f931a95406a45c661e60cc055", "LOCAL: live /proc probe of a running im.elf (ns/mnt, root, caps) - read-only, per maccer_acer"),
-    "V19": ("libJit_fx2_V19.so", "cd3dec720feae11a99207c5f3ae4dfd1181d98dbdddd853d299a19f4373fffcd", "LOCAL: diagnostic - report which processes the preload loaded into (any/im.elf/bootin/sen)"),
 }
+# --- loader steps: begin (helper_fx2/sdboot/update_runner.py writes this block)
+# The start-up loader, build fx2boot_v2 ("sdboot": helper_fx2/sdboot/, modding/FX2_SDBOOT.md). W1..W14 bring its files to the camera's RAM disk
+# (/tmp_wbshd, nothing on flash), W50..W53 choose what its helper applies (RAM copy), W30 runs the helper once from RAM, W42 reads its status,
+# W43 the whole result of every step of the helper's last run (for the session folder);
+# W40 INSTALLS it on flash (/etc/fx2boot and /etc/ld.so.preload) and W41 removes it. A step in LOADER_FLASH can write the camera's flash:
+# it needs --writes-flash besides --writes-memory. A battery change does not undo a flash step; W41 does.
+LOADER_STEPS = {
+    "W1": ("sdboot/libJit_fx2_W1.so", "54c225f87d908ff4a8b6c03c07be02d4aba60eff2634d2223e2c8d853e78d428", "RAM only: bring fx2boot.sh (9042 bytes) of the start-up loader to the camera's RAM disk"),
+    "W2": ("sdboot/libJit_fx2_W2.so", "fd2cd066fa8106cf85f2827fd68cc3002e1cf2bb7eaee42dd8b59e8b87d876d7", "RAM only: bring fx2cp.so (6136 bytes) of the start-up loader to the camera's RAM disk"),
+    "W3": ("sdboot/libJit_fx2_W3.so", "0d1f944903642e7941874c6b7d4f18cc985bf91be55927ce25003593495f2942", "RAM only: bring fx2hook.so (7552 bytes) of the start-up loader to the camera's RAM disk"),
+    "W4": ("sdboot/libJit_fx2_W4.so", "e588076df171b6c37b701daccde0bc557819d8d66205848bea3e7bd757e6ceeb", "RAM only: bring libJit_fx2_X0.so (66064 bytes, piece 1 of 2) of the start-up loader to the camera's RAM disk"),
+    "W5": ("sdboot/libJit_fx2_W5.so", "a7fe009eeba09ac211cc79b944025733d8b260677aa8b647f8f3a3a2ef1fbcc9", "RAM only: bring libJit_fx2_X0.so (66064 bytes, piece 2 of 2) of the start-up loader to the camera's RAM disk"),
+    "W6": ("sdboot/libJit_fx2_W6.so", "dc5360657499384a9885faf6678b801f26be9c5af66f940980eb1f58ea7bf963", "RAM only: bring libJit_fx2_X18.so (27280 bytes) of the start-up loader to the camera's RAM disk"),
+    "W7": ("sdboot/libJit_fx2_W7.so", "165cec4c12de773203e8cbb787c68b7c764e65bca244dc07ace2490cd88d70b0", "RAM only: bring libJit_fx2_L13.so (19832 bytes) of the start-up loader to the camera's RAM disk"),
+    "W8": ("sdboot/libJit_fx2_W8.so", "3f490ae8df4800490e010e6b609027efd0ba4ff1e2b5e7d36379ece6b95cd85d", "RAM only: bring libJit_fx2_H5.so (31680 bytes) of the start-up loader to the camera's RAM disk"),
+    "W9": ("sdboot/libJit_fx2_W9.so", "077156c2a7c1af1f51fb0f432ebb104e643278af9ef9851935050af3456184ec", "RAM only: bring libJit_fx2_P5.so (31696 bytes) of the start-up loader to the camera's RAM disk"),
+    "W10": ("sdboot/libJit_fx2_W10.so", "9f5d99c65b868864271ade42787950c2c382ffb2eecaf2a3a67dbadba268136d", "RAM only: bring libJit_fx2_L5.so (31680 bytes) of the start-up loader to the camera's RAM disk"),
+    "W11": ("sdboot/libJit_fx2_W11.so", "3ac05cd72ae7265bb9e8fab876902681995dc770daa6c550dbf808e9302c06ec", "RAM only: bring libJit_fx2_L16.so (16232 bytes) of the start-up loader to the camera's RAM disk"),
+    "W12": ("sdboot/libJit_fx2_W12.so", "4d7bb1b544f314681eb4d2f55514febbccebfd1a8744eb58890a76c4ad0978c2", "RAM only: bring libJit_fx2_X19.so (28392 bytes) of the start-up loader to the camera's RAM disk"),
+    "W13": ("sdboot/libJit_fx2_W13.so", "b7a74bc39d332925e158b3dda3b213aba41405f365b5e2f25d0dd6e1cba74f84", "RAM only: bring libJit_fx2_X20.so (28400 bytes) of the start-up loader to the camera's RAM disk"),
+    "W14": ("sdboot/libJit_fx2_W14.so", "ebfc898327cec057868120a1c9a3c4726de175c0af0df4c572abdbb0b0cef2d9", "RAM only: bring libJit_fx2_S16.so (17368 bytes) of the start-up loader to the camera's RAM disk"),
+    "W30": ("sdboot/libJit_fx2_W30.so", "54407e15009cbe6e6998ad10127281b0e75024696d569ae25af41d3f8528b8cd", "RAM only: start the start-up loader's helper once, now, from the RAM copy (the chosen plan); no flash is written"),
+    "W40": ("sdboot/libJit_fx2_W40.so", "de3fc5579ff4a9ed0b40c9e2cf6ae2f6d648d7a68060eeb0c1198a9425ba9aea", "FLASH: install the start-up loader (copies its checked files to /etc/fx2boot and writes /etc/ld.so.preload)"),
+    "W41": ("sdboot/libJit_fx2_W41.so", "467c00c9b174c70df6f18e3e5fa601fbfd5e72a624a6574b19a178c85eb234db", "FLASH: uninstall the start-up loader (removes /etc/ld.so.preload first, then /etc/fx2boot and earlier research builds' files)"),
+    "W42": ("sdboot/libJit_fx2_W42.so", "dd387b5db3f462bc429b60e48cf672527a2308f418e9bc4c2533c7885e52f285", "read-only: status of the start-up loader (what is installed, the plan, the helper's last report)"),
+    "W43": ("sdboot/libJit_fx2_W43.so", "53e99f46202f10c9878170356aa7ca66efc23c2a0be24f32231447fb400e9629", "read-only: the whole result of every step of the helper's last run, and its log (for the session folder)"),
+    "W50": ("sdboot/libJit_fx2_W50.so", "355b6dfc13e96e5bb18c30287cd33d0b3b1c0d7cfdb15b1e0afed0b27c016e84", "RAM only: choose the helper's plan: check (read-only: reads the coprocessor and encoder sites from outside the camera application)"),
+    "W51": ("sdboot/libJit_fx2_W51.so", "064bc0b5527deb2a83fd5a90d71b634bbc8f3f83aa98ebc1ae9920e563dbf0c8", "RAM only: choose the helper's plan: og2560 (the 3840x2560 open gate, 23.98p/24p: L13 H5 L16 X19 S16)"),
+    "W52": ("sdboot/libJit_fx2_W52.so", "444b5f00598a8f042161677d6d36cfed62b4c8b36d510418c15519e42077ee1d", "RAM only: choose the helper's plan: og2560pal (the 3840x2560 open gate on a PAL-set camera, 25p: L13 P5 L16 X19 S16)"),
+    "W53": ("sdboot/libJit_fx2_W53.so", "1a682332cc79d6e8cba978b95476e5fce525c4bc2391ec5c796abe8c2d4dc207", "RAM only: choose the helper's plan: squeeze (the squeezed open gate: X20 L13 L5 S16)"),
+    "W58": ("sdboot/libJit_fx2_W58.so", "ba809b02d9b60f1f26ead86a216791c6acd140343fe58c2ce3b210538ece59fc", "FLASH (one empty file): switch the start-up hook off (/etc/fx2boot/off)"),
+    "W59": ("sdboot/libJit_fx2_W59.so", "513df31447ef35181a467a21a23e499249e7efa3b635aad1635edbb6e02fb7b8", "FLASH: switch the start-up hook on again (removes /etc/fx2boot/off)"),
+}
+LOADER_STAGE = ("W1", "W2", "W3", "W4", "W5", "W6", "W7", "W8", "W9", "W10", "W11", "W12", "W13", "W14")
+LOADER_PLANS = {"check": "W50", "og2560": "W51", "og2560pal": "W52", "squeeze": "W53"}                                    # plan name: the step that chooses it
+LOADER_FLASH = ("W40", "W41", "W58", "W59")
+LOADER_BUILD = "fx2boot_v2"
+# --- loader steps: end
+WRITE_STEPS.update(LOADER_STEPS)
 PINS.update({k: v[:2] for k, v in WRITE_STEPS.items()})
-LEVELS.update({k: {"L": 200, "S": 300, "N": 500, "B": 700, "H": 800, "F": 900, "Q": 1000, "P": 1100, "K": 1200, "J": 1300, "I": 1400, "G": 1500, "M": 1600, "Z": 1700, "A": 1800, "V": 3400}[k[0]] + int(k[1:])
+LEVELS.update({k: {"L": 200, "S": 300, "N": 500, "B": 700, "H": 800, "F": 900, "Q": 1000, "P": 1100, "K": 1200, "J": 1300, "I": 1400, "G": 1500, "M": 1600, "Z": 1700, "A": 1800, "W": 3500}[k[0]] + int(k[1:])
                for k in WRITE_STEPS})
 WHICH = "check"
 FULL_HEIGHT_COLUMN = 5          # the register-matrix column of the full-height read-out (ogsq_fx2_v1's S0: mode 0x8c0 column 6 -> 5, as on the A7 IV)
@@ -155,7 +182,12 @@ def write_result(data):
             "euid": "see the result", "sections": [ln for ln in lines if ln.startswith("== ")], "problems": len(problems),
             "complete": any(ln.startswith("== done") for ln in lines[-3:]),
             "s3": {"step": WHICH, "what": WRITE_STEPS[WHICH][2], "outcome": outcome, "ok": outcome in ("DONE", "NOTHING TO DO"),
-                   "outcome_line": pick("DONE: ") or pick("NOTHING TO DO") or pick("NOT DONE: ") or pick("!! UNDO INCOMPLETE") or pick("UNDO INCOMPLETE"), "problem_lines": problems}}
+                   "outcome_line": pick("DONE: ") or pick("NOTHING TO DO") or pick("NOT DONE: ") or pick("!! UNDO INCOMPLETE") or pick("UNDO INCOMPLETE"), "problem_lines": problems,
+                   # a loader step's result is its report (what is installed, the helper's log): it is shown whole, printable characters only,
+                   # up to a line that starts with "==== " (W43: what follows is the steps' whole results, kept in the session folder's result file)
+                   "text": [ln for ln in "".join(ch if ch == "\n" or " " <= ch <= "~" else "." for ch in text.split("\n==== ")[0][:20000]).split("\n")[2:] if ln]
+                           + (["(the rest of this report, %d bytes in all, is in the session folder: the step's readcheck_result.txt)" % len(data)] if "\n==== " in text else [])
+                           if WHICH in LOADER_STEPS else None}}
 
 
 def reference():
@@ -695,6 +727,8 @@ def report(session, facts, which):
     f = facts["s3"]
     if which in WRITE_STEPS:
         lines = ["FX2 1.01 step %s: %s" % (which, f["what"]), "OUTCOME: %s" % f["outcome"], str(f["outcome_line"])] + ["  " + ln for ln in f["problem_lines"]]
+        if f.get("text"):
+            lines += ["the step's report:"] + ["  " + ln for ln in f["text"]]
         session.save_bytes("fx2_report.txt", ("\n".join(lines) + "\n").encode())
         for ln in lines:
             session.say(ln)
@@ -849,9 +883,14 @@ def main():
     ap.add_argument("--clear-result", metavar="SHA256", help="first delete the result file of an earlier run from the RAM disk, only if its SHA-256 is this")
     ap.add_argument("--firmware-shown")
     ap.add_argument("--writes-memory", action="store_true", help="needed for a write step (%s): it changes the running camera's memory" % ", ".join(WRITE_STEPS))
+    ap.add_argument("--writes-flash", action="store_true", help="needed besides --writes-memory for a start-up loader step that can write the camera's flash "
+                    "(%s): a battery change does not undo it, the uninstall step W41 does" % ", ".join(LOADER_FLASH))
     a = ap.parse_args()
     if a.which in WRITE_STEPS and a.go and not (a.dry_run or a.selftest) and not a.writes_memory:
         raise SystemExit("%s is a write step: %s. It needs --writes-memory as well. Use fx2_apply.py. Nothing was sent." % (a.which, WRITE_STEPS[a.which][2]))
+    if a.which in LOADER_FLASH and a.go and not (a.dry_run or a.selftest) and not a.writes_flash:
+        raise SystemExit("%s can write the camera's FLASH: %s. A battery change does not undo that; the uninstall step (W41) does. "
+                         "It needs --writes-flash as well. Use the start-up loader's launchers. Nothing was sent." % (a.which, WRITE_STEPS[a.which][2]))
     lib = use(a.which)
     if a.dry_run or a.selftest:
         if a.selftest:                              # --dry-run and --selftest win over --go (the launchers always pass --go): nothing is sent
