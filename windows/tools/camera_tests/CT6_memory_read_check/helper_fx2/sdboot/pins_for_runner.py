@@ -27,6 +27,24 @@ if "--check" in sys.argv:
     for n, v in pins["files"].items():
         if hashlib.sha256((HERE / n).read_bytes()).hexdigest() != v["sha256"]:
             bad.append("%s: the file is not the one fx2boot_pins.json names" % n)
+    # The hook compiles the manifest in, so a stale fx2hook.so refuses every boot ("not this build's file, nothing started").
+    # It was reused once during a rebuild and shipped exactly that way (2026-11-28); this check makes that impossible to miss.
+    import struct
+    hook = (HERE / "fx2hook.so").read_bytes()
+    for n, v in pins["files"].items():
+        if n == "fx2hook.so":
+            continue                  # a file cannot hold its own hash; fx2boot_hookfile.h carries that record, checked below
+        found = False
+        for i in range(len(hook) - 76):
+            if hook[i:i + 40].split(b"\0")[0] == n.encode() and struct.unpack_from("<I", hook, i + 40)[0] == v["size"] \
+                    and hook[i + 44:i + 76].hex() == v["sha256"]:
+                found = True
+                break
+        if not found:
+            bad.append("fx2hook.so: its built-in manifest does not hold %s at %d bytes - rebuild the hook" % (n, v["size"]))
+    self_rec = 'static const struct fx2boot_file fx2boot_hook = { "fx2hook.so", %d, { ' % len(hook)
+    if self_rec not in (HERE / "fx2boot_hookfile.h").read_text(encoding="utf8"):
+        bad.append("fx2boot_hookfile.h does not hold fx2hook.so at %d bytes - rebuild the hook" % len(hook))
     print("\n".join(bad) if bad else "fx2_run.py holds the %d loader steps of build %s, and every file has its pinned SHA-256" % (len(steps), pins["build"]))
     sys.exit(1 if bad else 0)
 print("LOADER_STEPS = {")

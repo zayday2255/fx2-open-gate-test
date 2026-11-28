@@ -110,6 +110,29 @@ A battery pull (10 s) afterwards returned the camera to stock, as designed: the 
 
 The power switch does **not** do this - it leaves the encoder step applied while the rest goes stock (issue #5). Use the battery pull.
 
+## The install, and the bug it found (2026-11-28, ILME-FX2 1.01)
+
+Step 3 (`loader_install_57k`, plan `og57`) ran on the tester's FX2: all 17 files copied to `/etc/fx2boot`, each read back and its
+SHA-256 checked, then `/etc/ld.so.preload` written last. `loader_status` afterwards: `the start-up hook is INSTALLED`, `plan: og57`,
+`every file is this build's`.
+
+**The hook then refused every boot:**
+
+```
+hook: not this build's file, nothing started: fx2boot.sh
+```
+
+while the status step said `fx2boot.sh: this build's`. Both were telling the truth: the hook compiles the manifest of every payload
+file into itself, and the installed hook was a **stale build** whose manifest held the *old* `fx2boot.sh` (7,306 bytes) and had no
+entry at all for `X21` or `X22`. Cause: the local rebuild script reused the existing `fx2hook.so` instead of recompiling it, so after
+`fx2boot.sh` grew (the SD switch) and `X22` was added (5.7K), the hook still checked against the old list.
+
+The fix is in the build, and there is now a guard: `pins_for_runner.py --check` reads the manifest compiled into `fx2hook.so` and
+fails, naming each file, unless every payload file is there at the right size and SHA-256. Given the stale hook that shipped, it
+reports all six missing files and exits non-zero.
+
+Installing again with the rebuilt hook is the next step; the payload's hook is now 7,856 bytes with all 16 entries correct.
+
 ## Try it, in this order
 
 Every command is a plan of `fx2_batch.py` (one USB connection). The launchers in `windows/` and `macos/` are named after them.

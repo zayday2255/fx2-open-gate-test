@@ -39,8 +39,8 @@
    "size": 6136
   },
   "fx2hook.so": {
-   "sha256": "13cc9e2ebd04230af15251c81709922cc04e1e0318c9804a59446ababe649dd4",
-   "size": 7552
+   "sha256": "e7abce346cb1d4fbad1a971c6370ad06f5f9d66b31eeed9ec06dd29966bae8d2",
+   "size": 7856
   },
   "libJit_fx2_X21.so": {
    "sha256": "110f77e7c3ed59c365c04c893b7a9d9a43a6de4191a1574c34ec296cbf18e55f",
@@ -150,9 +150,9 @@
   },
   "W3": {
    "file": "libJit_fx2_W3.so",
-   "sha256": "bdf870f87df5606de3637e6cd2ed401576819403fd2d9b0a121094e755c0344a",
-   "size": 14120,
-   "what": "RAM only: bring fx2hook.so (7552 bytes) of the start-up loader to the camera's RAM disk"
+   "sha256": "66c484b9f5736c4aea71fd0e690ebc6f3460a8ba9b9a8469b4ea43cb6e3cf5e2",
+   "size": 14424,
+   "what": "RAM only: bring fx2hook.so (7856 bytes) of the start-up loader to the camera's RAM disk"
   },
   "W4": {
    "file": "libJit_fx2_W4.so",
@@ -246,13 +246,13 @@
   },
   "W30": {
    "file": "libJit_fx2_W30.so",
-   "sha256": "851a055939a3656ccb02a87e66db688e86f797c9705efd39490675b20df5cd3b",
+   "sha256": "2890e7f0f36bd191cf10af25b6ef69382e1cc0287175eda7be42ecd6f61a7f9d",
    "size": 12064,
    "what": "RAM only: start the start-up loader's helper once, now, from the RAM copy (the chosen plan); no flash is written"
   },
   "W40": {
    "file": "libJit_fx2_W40.so",
-   "sha256": "df272d73349016858c4ad4f0ac85f1fba1f212867a9dd589d59c997f240d18e6",
+   "sha256": "b81bb55fdce24db15431c9ca07319783edd6d6c61e58bf02f137f0c452cb023d",
    "size": 15464,
    "what": "FLASH: install the start-up loader (copies its checked files to /etc/fx2boot and writes /etc/ld.so.preload)"
   },
@@ -264,7 +264,7 @@
   },
   "W42": {
    "file": "libJit_fx2_W42.so",
-   "sha256": "5301b1a988bb446bee205afe37fd455bb978cfb119410c94dc32b5e118738239",
+   "sha256": "b17b15c0a594976be40e02df49651931c31b7f25175c83b31bdc0486a0faccb0",
    "size": 25352,
    "what": "read-only: status of the start-up loader (what is installed, the plan, the helper's last report)"
   },
