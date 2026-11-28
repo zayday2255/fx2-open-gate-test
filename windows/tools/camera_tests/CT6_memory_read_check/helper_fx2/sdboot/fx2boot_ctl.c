@@ -262,6 +262,13 @@ static void run(void)
      * writing to it: the camera application is never shown it. So the switch has to ask the block layer instead. These lines only READ,
      * and say whether each place answers at all - the first question is which of them exists on an FX2. */
     put("the SD card, for the on/off switch (read-only; 'absent' means the place does not answer here):\n");
+    {
+        int a = sys_exists("/dev/mmcb1"), b = sys_exists("/dev/mmcb");
+        put("  the switch, as fx2boot.sh reads it: ");
+        if (a || b) { put("ON (a card is in: "); put(a ? "/dev/mmcb1" : "/dev/mmcb"); put(a && b ? " and /dev/mmcb" : ""); put(")\n"); }
+        else put("OFF (no card: /dev/mmcb1 and /dev/mmcb are absent) - a power-on would apply nothing\n");
+        put("  (a power-on with no card applies nothing; 'run now' over USB is not gated by the card)\n");
+    }
     block_list();
     put("DONE: status read; nothing was written\n");
     out_end();

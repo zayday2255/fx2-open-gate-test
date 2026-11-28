@@ -129,7 +129,7 @@ WRITE_STEPS = {
 # W40 INSTALLS it on flash (/etc/fx2boot and /etc/ld.so.preload) and W41 removes it. A step in LOADER_FLASH can write the camera's flash:
 # it needs --writes-flash besides --writes-memory. A battery change does not undo a flash step; W41 does.
 LOADER_STEPS = {
-    "W1": ("sdboot/libJit_fx2_W1.so", "cabae27e05b542023fcd6d7c0df51eb80d9c5c09e0208cadf98f74ec3db72438", "RAM only: bring fx2boot.sh (8315 bytes) of the start-up loader to the camera's RAM disk"),
+    "W1": ("sdboot/libJit_fx2_W1.so", "1791eac2f614139c0a993faf38345003c6b2bed38d93df1b95cdb7694b828e88", "RAM only: bring fx2boot.sh (9306 bytes) of the start-up loader to the camera's RAM disk"),
     "W2": ("sdboot/libJit_fx2_W2.so", "fd2cd066fa8106cf85f2827fd68cc3002e1cf2bb7eaee42dd8b59e8b87d876d7", "RAM only: bring fx2cp.so (6136 bytes) of the start-up loader to the camera's RAM disk"),
     "W3": ("sdboot/libJit_fx2_W3.so", "bdf870f87df5606de3637e6cd2ed401576819403fd2d9b0a121094e755c0344a", "RAM only: bring fx2hook.so (7552 bytes) of the start-up loader to the camera's RAM disk"),
     "W4": ("sdboot/libJit_fx2_W4.so", "6465d1e5d4a7c9a9575939aea506410e6e84ad88bec7e25e5ea66382c8d9d64e", "RAM only: bring libJit_fx2_X21.so (65072 bytes, piece 1 of 2) of the start-up loader to the camera's RAM disk"),
@@ -147,10 +147,10 @@ LOADER_STEPS = {
     "W16": ("sdboot/libJit_fx2_W16.so", "a791d854dc558fa4cda2509d7a2890ed1c25373f62f3e4ec7f30479f61c91433", "RAM only: bring libJit_fx2_K5.so (31680 bytes) of the start-up loader to the camera's RAM disk"),
     "W17": ("sdboot/libJit_fx2_W17.so", "c335e1834c83619d4930f5dd772146e782b6dc3c4667ccefe71585aafb11e945", "RAM only: bring libJit_fx2_J5.so (31680 bytes) of the start-up loader to the camera's RAM disk"),
     "W18": ("sdboot/libJit_fx2_W18.so", "5c918c48b513e38885d45a9f5849ef25f6a51f1af3d23b5ba6178ce69a3b9073", "RAM only: bring libJit_fx2_K16.so (16824 bytes) of the start-up loader to the camera's RAM disk"),
-    "W30": ("sdboot/libJit_fx2_W30.so", "58404229507cfa24d18768538f64a393a493274a194596027763d42d3e3348e8", "RAM only: start the start-up loader's helper once, now, from the RAM copy (the chosen plan); no flash is written"),
-    "W40": ("sdboot/libJit_fx2_W40.so", "3d993ecd57015647541d3e83c7c39ca1138844feebd186ee2cbce0250924adf5", "FLASH: install the start-up loader (copies its checked files to /etc/fx2boot and writes /etc/ld.so.preload)"),
+    "W30": ("sdboot/libJit_fx2_W30.so", "851a055939a3656ccb02a87e66db688e86f797c9705efd39490675b20df5cd3b", "RAM only: start the start-up loader's helper once, now, from the RAM copy (the chosen plan); no flash is written"),
+    "W40": ("sdboot/libJit_fx2_W40.so", "df272d73349016858c4ad4f0ac85f1fba1f212867a9dd589d59c997f240d18e6", "FLASH: install the start-up loader (copies its checked files to /etc/fx2boot and writes /etc/ld.so.preload)"),
     "W41": ("sdboot/libJit_fx2_W41.so", "467c00c9b174c70df6f18e3e5fa601fbfd5e72a624a6574b19a178c85eb234db", "FLASH: uninstall the start-up loader (removes /etc/ld.so.preload first, then /etc/fx2boot and earlier research builds' files)"),
-    "W42": ("sdboot/libJit_fx2_W42.so", "830ed268b3f6d6093007903e0f3c943235224647b28916db1c66dc878881f63a", "read-only: status of the start-up loader (what is installed, the plan, the helper's last report)"),
+    "W42": ("sdboot/libJit_fx2_W42.so", "5301b1a988bb446bee205afe37fd455bb978cfb119410c94dc32b5e118738239", "read-only: status of the start-up loader (what is installed, the plan, the helper's last report)"),
     "W50": ("sdboot/libJit_fx2_W50.so", "7df07b84d27a1316b8511beef2bc845717f0367bf5724fab282457c3d255e052", "RAM only: choose the helper's plan: check (read-only: reads the coprocessor and encoder sites from outside the camera application)"),
     "W51": ("sdboot/libJit_fx2_W51.so", "9535392da6a4a729abe708bfa9845b5aeb681a4c9a6ef71250cda7ff9c98acff", "RAM only: choose the helper's plan: og2560 (the 3840x2560 open gate, 23.98p/24p: L13 H5 L16 X19 S16)"),
     "W52": ("sdboot/libJit_fx2_W52.so", "2a2a107c4754c62e57e54c367ca3291628d88ccc9d2edb005e2222aedcafdca4", "RAM only: choose the helper's plan: og2560pal (the 3840x2560 open gate on a PAL-set camera, 25p: L13 P5 L16 X19 S16)"),

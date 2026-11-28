@@ -102,6 +102,22 @@ rm -f $R/fx2boot_*.txt
 
 [ -f /version.txt ] || stop "/version.txt is not there"
 [ "`cat /version.txt`" = "$FIRMWARE" ] || stop "the camera's firmware is not the one this build was made for (/version.txt)"
+
+# ---- the SD card as the on/off switch (2026-11-27). Measured on an FX2, card in then out: /dev/mmcb1 (a formatted card: whole device plus
+# first partition) is there exactly when a card is in, and /dev/mmcb (any card) likewise; /dev/mmcb-char is there either way because it is
+# the slot's controller, so it must NOT be the test. Nothing else in /dev or /sys/block changes with the card. The usual names
+# (/sys/block/mmcblk0, /sys/bus/mmc) do not exist on this camera, which is why the block nodes are tested directly.
+# Only a power-on run is gated: "run now" over USB is an explicit command from an operator, who can see the camera.
+if [ "$HOW" != now ]; then
+    if [ -e /dev/mmcb1 ]; then
+        say "SD card present (/dev/mmcb1): the switch is on"
+    elif [ -e /dev/mmcb ]; then
+        say "SD card present (/dev/mmcb, no partition yet): the switch is on"
+    else
+        stop "no SD card (/dev/mmcb1 and /dev/mmcb are absent): the switch is off, nothing is applied"
+    fi
+fi
+
 [ -f $D/plan ] || stop "no plan is chosen ($D/plan is absent)"
 PLAN=`cat $D/plan`
 case "$PLAN" in

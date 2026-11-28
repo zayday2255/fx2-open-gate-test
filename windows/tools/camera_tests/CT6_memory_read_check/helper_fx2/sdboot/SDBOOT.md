@@ -160,7 +160,12 @@ If step 1 does not give those two lines, stop there and send the session folders
   **`/dev/mmcb-char` stays either way** - it is the slot's controller, not the card - so a switch must test `mmcb`/`mmcb1` and
   not the `-char` node. The usual names do not apply on this camera: `/sys/block/mmcblk0`, `/sys/bus/mmc/*` and
   `/sys/class/mmc_host/*` are all absent, and `mmca` is the internal eMMC (`mmca-char` only).
-  Not written yet: the plan step that reads this, and the failure mode to choose (card out = do nothing at all, the safe default).
+  **The switch is written (fx2boot.sh):** a power-on with no card stops before the plan is even read - nothing is applied. `run now`
+  over USB is deliberately not gated, because that is an operator asking with the camera in their hands. `loader_status` now prints
+  the state the helper would see (`ON`/`OFF`) before the raw block-device lines.
+
+  Tested offline in isolation (the gate's own text against a fake /dev): card out stops, `mmcb1` present proceeds, `mmcb` alone
+  proceeds with its own line, and `run now` with no card proceeds. Still not run on a camera.
 
 The full notes, with the evidence for each statement, are `a7iv_map\modding\FX2_SDBOOT.md` in the author's map; the sources and
 the emulation are in `windows/tools/camera_tests/CT6_memory_read_check/helper_fx2/sdboot/`.
