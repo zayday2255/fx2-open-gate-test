@@ -118,9 +118,14 @@ WRITE_STEPS = {
     # 1.95:1 (helper/expected_words_dsq15_fx2_v1.h). On top of S16 only (its stock bytes are S16's). Display only. Not run on any camera.
     "A16": ("libJit_fx2_A16.so", "cd6f420299a297aab6c2df3665e3b799946615a4220f42d5a4f04e87d1119886", "LOCAL: De-Squeeze Display 1.3x entry shows 2.25:1 for 1.5x anamorphic lenses (dsq15_fx2_v1, on top of S16)"),
     "A17": ("libJit_fx2_A17.so", "f190f3c211b501d1ea8291439d2092b254c5be7a4be8844450eaafe1e0ac4764", "LOCAL: put back S16's 1.3x shape (1.95:1)"),
+    # LOCAL (2026-11-28): the viewfinder at 3:2. The 4:3 viewfinder letterboxes the open gate's squeezed 16:9 display picture, but it
+    # follows De-Squeeze Display: E16 makes the 1.3x entry 1.5:1 (helper/expected_words_dsq32_fx2_v1.h), so 1.3x shows the true 3:2 frame
+    # in the viewfinder and on the rear screen. On top of S16 only; the same two words as A16 (one or the other). Display only.
+    "E16": ("libJit_fx2_E16.so", "2358983cf12c11b6d3d25a06bc0f4e926a550453a05abdc2d6b15937b9ca18dc", "LOCAL: De-Squeeze Display 1.3x entry shows 3:2 (1.5:1), the true open-gate shape in the viewfinder (dsq32_fx2_v1, on top of S16)"),
+    "E17": ("libJit_fx2_E17.so", "45759dbcb7575166d322a5ac5d7361bd4bc747666baaa105ead402f0ba65c5ee", "LOCAL: put back S16's 1.3x shape (1.95:1) after E16"),
 }
 PINS.update({k: v[:2] for k, v in WRITE_STEPS.items()})
-LEVELS.update({k: {"L": 200, "S": 300, "N": 500, "B": 700, "H": 800, "F": 900, "Q": 1000, "P": 1100, "K": 1200, "J": 1300, "I": 1400, "G": 1500, "M": 1600, "A": 1800}[k[0]] + int(k[1:])
+LEVELS.update({k: {"L": 200, "S": 300, "N": 500, "B": 700, "H": 800, "F": 900, "Q": 1000, "P": 1100, "K": 1200, "J": 1300, "I": 1400, "G": 1500, "M": 1600, "A": 1800, "E": 1900}[k[0]] + int(k[1:])
                for k in WRITE_STEPS})
 WHICH = "check"
 FULL_HEIGHT_COLUMN = 5          # the register-matrix column of the full-height read-out (ogsq_fx2_v1's S0: mode 0x8c0 column 6 -> 5, as on the A7 IV)
